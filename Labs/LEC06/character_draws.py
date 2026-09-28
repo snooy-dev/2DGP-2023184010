@@ -12,7 +12,7 @@ def draw_character(x, y):
 
 def move_circle():
     for degree in range(360):
-        theta = math.radians(degree)
+        theta = math.radians(degree + 90)
         x = 400 + 250 * math.cos(theta)
         y = 300 + 250 * math.sin(theta)
         draw_character(x, y)
