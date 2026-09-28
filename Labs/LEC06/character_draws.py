@@ -40,6 +40,9 @@ def move_rectangle():
     draw_right()
 
 def draw_left_side():
+    for t in range(100):
+        t /= 100
+        draw_character(400 + t * 350, 600 - t * 550)
     pass
 
 def draw_bottom_side():
