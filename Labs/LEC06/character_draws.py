@@ -34,8 +34,8 @@ def draw_right():
         draw_character(50, y)
 
 def move_rectangle():
-    # draw_top()
-    # draw_left()
+    draw_top()
+    draw_left()
     draw_bottom()
     draw_right()
 
