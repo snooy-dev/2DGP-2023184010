@@ -45,7 +45,8 @@ def draw_left_side():
         draw_character(400 + t * 350, 600 - t * 550)
 
 def draw_bottom_side():
-    pass
+    for x in range(750, 50, -5):
+        draw_character(x, 50)
 
 def draw_right_side():
     pass
