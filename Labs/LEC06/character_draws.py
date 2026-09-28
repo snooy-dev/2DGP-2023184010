@@ -48,7 +48,7 @@ def draw_right_side():
     pass
 
 def move_triangle():
-    # draw_left_side()
+    draw_left_side()
     draw_bottom()
     draw_right_side()
 
