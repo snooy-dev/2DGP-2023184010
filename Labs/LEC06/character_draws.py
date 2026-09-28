@@ -45,7 +45,9 @@ def draw_left_side():
         draw_character(400 + t * 350, 600 - t * 550)
 
 def draw_right_side():
-    pass
+    for t in range(100):
+        t /= 100
+        draw_character(50 + t * 350, 50 + t * 550)
 
 def move_triangle():
     # draw_left_side()
