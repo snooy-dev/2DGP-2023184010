@@ -4,6 +4,12 @@ from pico2d import *
 open_canvas(800, 600)
 character = load_image('character.png')
 
+def draw_character(x, y):
+    clear_canvas()
+    character.draw(x, y)
+    update_canvas()
+    delay(0.01)
+
 def move_circle():
     for degree in range(360):
         theta = math.radians(degree)
@@ -15,14 +21,9 @@ def draw_top():
     for x in range(50, 750, 5):
         draw_character(x, 550)
 
-def draw_character(x, y):
-    clear_canvas()
-    character.draw(x, y)
-    update_canvas()
-    delay(0.01)
-
 def draw_left():
-    pass
+    for y in range(550, 50, -5):
+        draw_character(750, y)
 
 def draw_bottom():
     pass
@@ -31,7 +32,7 @@ def draw_right():
     pass
 
 def move_rectangle():
-    draw_top()
+    # draw_top()
     draw_left()
     draw_bottom()
     draw_right()
