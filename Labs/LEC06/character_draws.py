@@ -42,12 +42,12 @@ def move_rectangle():
 def draw_left_side():
     for t in range(100):
         t /= 100
-        draw_character(400 + t * 350, 600 - t * 550)
+        draw_character(400 + t * 350, 550 - t * 500)
 
 def draw_right_side():
     for t in range(100):
         t /= 100
-        draw_character(50 + t * 350, 50 + t * 550)
+        draw_character(50 + t * 350, 50 + t * 500)
 
 def move_triangle():
     draw_left_side()
