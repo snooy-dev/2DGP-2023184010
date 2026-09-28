@@ -40,7 +40,7 @@ def move_rectangle():
     draw_right()
 
 def move_triangle():
-    print('TRIANGLE')
+    pass
 
 while True:
     # move_circle()
