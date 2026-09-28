@@ -55,8 +55,8 @@ def move_triangle():
     draw_right_side()
 
 while True:
-    # move_circle()
+    move_circle()
     # move_rectangle()
-    move_triangle()
+    # move_triangle()
 
 close_canvas()
