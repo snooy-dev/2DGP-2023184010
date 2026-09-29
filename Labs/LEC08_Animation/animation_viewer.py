@@ -497,8 +497,152 @@ def draw_source(sheet, rect, scale=1.8):
                     width * scale, height * scale)
 
 
+
+def self_test():
+    """Headless standard-library tests; pico2d is deliberately not imported."""
+    import random
+    import unittest
+    from dataclasses import replace
+
+    class ViewerTests(unittest.TestCase):
+        def test_catalog_and_source(self):
+            validate_data()
+            verify_source()
+            expected = (14, 6, 8, 16, 6, 4, 6, 18, 16, 21, 18, 22, 9, 7, 13, 14, 9)
+            self.assertEqual(tuple(len(ACTIONS[k].frames) for k in ACTION_ORDER), expected)
+            self.assertEqual(len(FRAME_RECTS), 190)
+            self.assertEqual(sum(expected), 207)
+            self.assertGreater(len({frame.rect[2:] for frame in FRAME_RECTS.values()}), 20)
+            self.assertEqual(ACTIONS["stagger"].frames[-2:], ("stun:1", "stun:0"))
+            self.assertEqual(ACTIONS["wounded"].frames[:2], ("stun:0", "stun:1"))
+
+        def test_each_repeat_and_pause_boundary(self):
+            for index, key in enumerate(ACTION_ORDER):
+                with self.subTest(action=key):
+                    action = ACTIONS[key]
+                    player = Player(action_index=index)
+                    period = sum(action.durations)
+                    for repeat in range(1, REPEAT_COUNT + 1):
+                        advance(player, period - 0.00001)
+                        self.assertEqual(player.completed_repeats, repeat - 1)
+                        self.assertEqual(player.frame_index, len(action.frames) - 1)
+                        self.assertEqual(player.mode, "PLAYING")
+                        advance(player, 0.00001)
+                        self.assertEqual(player.completed_repeats, repeat)
+                    self.assertEqual(player.mode, "PAUSING")
+                    advance(player, PAUSE_SECONDS - 0.00001)
+                    self.assertEqual(player.mode, "PAUSING")
+                    self.assertEqual(player.frame_index, len(action.frames) - 1)
+                    advance(player, 0.00001)
+                    self.assertEqual(player.action_index, (index + 1) % len(ACTION_ORDER))
+                    self.assertEqual(player.frame_index, 0)
+                    self.assertEqual(player.completed_repeats, 0)
+                    self.assertEqual(player.mode, "PLAYING")
+                    advance(player, 0.01)
+                    self.assertAlmostEqual(player.elapsed, 0.01)
+
+        def test_last_frame_duration_and_phase_seams(self):
+            for index, key in enumerate(ACTION_ORDER):
+                action = ACTIONS[key]
+                player = Player(action_index=index)
+                offset = 0
+                for _, ids in action.phases[:-1]:
+                    end = offset + len(ids)
+                    advance(player, sum(action.durations[offset:end]))
+                    self.assertEqual(player.completed_repeats, 0)
+                    self.assertEqual(player.frame_index, end)
+                    offset = end
+
+        def test_large_dt_two_cycles_and_trace(self):
+            total = sum(REPEAT_COUNT * sum(ACTIONS[k].durations) + PAUSE_SECONDS
+                        for k in ACTION_ORDER)
+            events = []
+            def collect(event, player):
+                events.append((event, player.timeline, player.action_index,
+                               player.completed_repeats, player.frame_index))
+            player = Player()
+            collect("start", player)
+            advance(player, 2 * total, collect)
+            self.assertEqual((player.cycles, player.action_index, player.frame_index), (2, 0, 0))
+            self.assertAlmostEqual(player.elapsed, 0)
+            self.assertAlmostEqual(player.timeline, 2 * total)
+            self.assertEqual(sum(e[0] == "repeat" for e in events), 170)
+            self.assertEqual(sum(e[0] == "pause" for e in events), 34)
+            starts = [e[2] for e in events if e[0] == "start"]
+            self.assertEqual(starts, list(range(17)) * 2 + [0])
+            for before, after in zip(events, events[1:]):
+                if before[0] == "pause":
+                    self.assertEqual(after[0], "start")
+                    self.assertAlmostEqual(after[1] - before[1], PAUSE_SECONDS)
+                    self.assertEqual(before[3], REPEAT_COUNT)
+
+        def test_frame_rate_and_jitter_independence(self):
+            duration = 2 * sum(REPEAT_COUNT * sum(a.durations) + PAUSE_SECONDS
+                               for a in ACTIONS.values()) + 0.031
+            expected = Player()
+            advance(expected, duration)
+            for fps in (24, 60, 144):
+                player = Player()
+                rng = random.Random(fps)
+                elapsed = 0.0
+                while elapsed < duration:
+                    dt = min(rng.uniform(0.4, 1.7) / fps, duration - elapsed)
+                    advance(player, dt)
+                    elapsed += dt
+                self.assertEqual((player.action_index, player.frame_index, player.mode,
+                                  player.completed_repeats, player.cycles),
+                                 (expected.action_index, expected.frame_index, expected.mode,
+                                  expected.completed_repeats, expected.cycles))
+                self.assertAlmostEqual(player.elapsed, expected.elapsed, places=7)
+
+        def test_variable_duration_effect_frames(self):
+            player = Player(action_index=ACTION_ORDER.index("counter_attack"))
+            action = ACTIONS["counter_attack"]
+            advance(player, sum(action.durations[:3]))
+            self.assertEqual(player.frame_index, 3)
+            advance(player, 0.119)
+            self.assertEqual(player.frame_index, 3)
+            advance(player, 0.001)
+            self.assertEqual(player.frame_index, 4)
+
+        def test_reject_bad_dt(self):
+            player = Player()
+            advance(player, 0)
+            self.assertEqual(player, Player())
+            for dt in (-1, float("nan"), float("inf")):
+                with self.assertRaises(ValueError):
+                    advance(player, dt)
+
+        def test_reject_bad_metadata(self):
+            frame_id = next(iter(FRAME_RECTS))
+            for rect in ((-1, 0, 10, 10), (0, 0, 0, 10), (2390, 0, 10, 10)):
+                frames = dict(FRAME_RECTS)
+                frames[frame_id] = replace(frames[frame_id], rect=rect)
+                with self.assertRaises(ValueError):
+                    validate_data(frames=frames)
+            for bad in (
+                replace(ACTIONS["idle"], phases=()),
+                replace(ACTIONS["idle"], fps=0),
+                replace(ACTIONS["idle"], phases=(("bad", ("absent:0",)),)),
+                replace(ACTIONS["idle"], duration_overrides=((0, float("nan")),)),
+                replace(ACTIONS["idle"], duration_overrides=((99, 1),)),
+                replace(ACTIONS["idle"], duration_overrides=((0, 1), (0, 2))),
+            ):
+                with self.assertRaises(ValueError):
+                    validate_data(actions=dict(ACTIONS, idle=bad))
+            with self.assertRaises(ValueError):
+                validate_data(order=ACTION_ORDER + ("idle",))
+
+    suite = unittest.defaultTestLoader.loadTestsFromTestCase(ViewerTests)
+    result = unittest.TextTestRunner(verbosity=2).run(suite)
+    return 0 if result.wasSuccessful() else 1
+
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--self-test", action="store_true",
+                        help="Run headless data and timing checks, then exit")
     parser.add_argument("--trace", action="store_true",
                         help="Log action starts, completed repeats and pauses")
     parser.add_argument("--cycles", type=int,
@@ -512,6 +656,8 @@ def main(argv=None):
     parser.add_argument("--seconds", type=float,
                         help="Close after this many seconds (rendering smoke checks)")
     args = parser.parse_args(argv)
+    if args.self_test:
+        return self_test()
     if args.cycles is not None and (args.cycles <= 0 or args.inspect or args.source_top is not None):
         parser.error("--cycles requires normal playback and a positive count")
     if args.seconds is not None and (not math.isfinite(args.seconds) or args.seconds <= 0):
@@ -608,4 +754,4 @@ def main(argv=None):
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())
