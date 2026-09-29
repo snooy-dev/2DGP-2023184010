@@ -605,6 +605,45 @@ def self_test():
             advance(player, 0.001)
             self.assertEqual(player.frame_index, 4)
 
+        def test_every_rectangle_renders_inside_canvas(self):
+            class Sheet:
+                h = SOURCE_SIZE[1]
+
+                def clip_draw(self, *args):
+                    self.args = args
+
+            sheet = Sheet()
+            for action_id in ACTION_ORDER:
+                layout = action_layout(ACTIONS[action_id])
+                for frame_id in ACTIONS[action_id].frames:
+                    with self.subTest(action=action_id, frame=frame_id):
+                        frame = FRAME_RECTS[frame_id]
+                        draw_frame(sheet, frame, *layout)
+                        left, bottom, w, h, x, y, dw, dh = sheet.args
+                        self.assertEqual((left, sheet.h - bottom - h, w, h), frame.rect)
+                        self.assertAlmostEqual(dw / dh, w / h)
+                        self.assertGreaterEqual(x - dw / 2, MARGIN_X - 1e-8)
+                        self.assertLessEqual(x + dw / 2, CANVAS_WIDTH - MARGIN_X + 1e-8)
+                        self.assertGreaterEqual(y - dh / 2, MARGIN_Y - 1e-8)
+                        self.assertLessEqual(y + dh / 2, CANVAS_HEIGHT - MARGIN_Y + 1e-8)
+                        self.assertAlmostEqual(x - dw / 2 + frame.pivot_x * layout[2], layout[0])
+                        self.assertAlmostEqual(y + dh / 2 - frame.pivot_y * layout[2], layout[1])
+            idle_height = FRAME_RECTS['idle:0'].rect[3] * action_layout(ACTIONS['idle'])[2]
+            self.assertGreaterEqual(idle_height, CANVAS_HEIGHT / 2)
+
+        def test_clip_draw_known_top_and_bottom_coordinates(self):
+            class Sheet:
+                h = 1000
+
+                def clip_draw(self, *args):
+                    self.args = args
+
+            sheet = Sheet()
+            draw_frame(sheet, Frame('asymmetric', (10, 20, 80, 120), 30, 90), 400, 300, 2)
+            self.assertEqual(sheet.args, (10, 860, 80, 120, 420, 360, 160, 240))
+            draw_frame(sheet, Frame('bottom', (0, 900, 50, 100), 25, 50), 400, 300, 1)
+            self.assertEqual(sheet.args, (0, 0, 50, 100, 400, 300, 50, 100))
+
         def test_reject_bad_dt(self):
             player = Player()
             advance(player, 0)
