@@ -11,7 +11,9 @@ ROOT = Path(__file__).resolve().parent
 SOURCE_PATH = ROOT / "assets" / "source" / "hornet_original.png"
 SOURCE_SIZE = (2393, 13086)
 SOURCE_SHA256 = "0bcedf01ef61f1b2482cd76afed1f76435aa43f899b0e87242c283322997b02f"
-CANVAS_WIDTH, CANVAS_HEIGHT = 960, 720
+CANVAS_WIDTH, CANVAS_HEIGHT = 1280, 720
+MARGIN_X, MARGIN_Y = 36, 64
+PREFERRED_SCALE = 2.0
 
 
 @dataclass(frozen=True)
@@ -341,6 +343,36 @@ ACTIONS = {
 ACTION_ORDER = tuple(ACTIONS)
 
 
+def action_layout(action):
+    """One scale per entire action; leave room for every frame and its effects."""
+    frames = [FRAME_RECTS[frame_id] for frame_id in action.frames]
+    left = max(frame.pivot_x for frame in frames)
+    right = max(frame.rect[2] - frame.pivot_x for frame in frames)
+    top = max(frame.pivot_y for frame in frames)
+    bottom = max(frame.rect[3] - frame.pivot_y for frame in frames)
+    scale = min(PREFERRED_SCALE,
+                (CANVAS_WIDTH / 2 - MARGIN_X) / max(left, right),
+                (CANVAS_HEIGHT - 2 * MARGIN_Y) / (top + bottom))
+    return CANVAS_WIDTH / 2, (CANVAS_HEIGHT + (bottom - top) * scale) / 2, scale
+
+
+def load_hud_font(p):
+    """An optional system font; running the animation never needs a font asset."""
+    import os
+    candidates = (
+        Path(os.environ.get("WINDIR", "C:/Windows")) / "Fonts/consola.ttf",
+        Path("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"),
+        Path("/System/Library/Fonts/Menlo.ttc"),
+    )
+    for path in candidates:
+        if path.is_file():
+            try:
+                return p.load_font(str(path), 20)
+            except OSError:
+                pass
+    return None
+
+
 def draw_frame(sheet, frame, anchor_x, anchor_y, scale):
     """Keep the body anchor stable despite irregular rectangles and effects."""
     left, top, width, height = frame.rect
@@ -391,6 +423,8 @@ def main(argv=None):
     try:
         p.open_canvas(CANVAS_WIDTH, CANVAS_HEIGHT)
         opened = True
+        p.hide_lattice()
+        font = load_hud_font(p)
         sheet = p.load_image(str(SOURCE_PATH))
         if (sheet.w, sheet.h) != SOURCE_SIZE:
             raise ValueError("Unexpected original sheet dimensions")
@@ -421,7 +455,12 @@ def main(argv=None):
             p.clear_canvas()
             if args.source_top is None:
                 draw_frame(sheet, FRAME_RECTS[ACTIONS[action_id].frames[frame_index]],
-                           CANVAS_WIDTH / 2, 170, 1.8)
+                           *action_layout(ACTIONS[action_id]))
+                if font:
+                    font.draw(36, CANVAS_HEIGHT - 32,
+                              f'HORNET  /  {ACTIONS[action_id].label}  /  '
+                              f'Frame {frame_index + 1}/{len(ACTIONS[action_id].frames)}')
+                    font.draw(36, 30, 'ESC: close    Inspect: Left/Right = frame, Up/Down = action')
             else:
                 height = min(CANVAS_HEIGHT, sheet.h - args.source_top)
                 draw_source(sheet, (0, args.source_top, CANVAS_WIDTH, height), 1)
