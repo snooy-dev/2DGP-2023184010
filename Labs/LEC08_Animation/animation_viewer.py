@@ -43,6 +43,42 @@ class Action:
 # left, top, width, height, pivot_x, pivot_y; top-left source coordinates.
 # Measured from the unchanged sheet, including every nonzero-alpha pixel.
 SOURCE_FRAMES = {
+    "sphere_recover": (
+        (1372, 5635, 231, 174, 95.5, 210),
+        (1607, 5648, 200, 197, 136.5, 197),
+    ),
+    "sphere": (
+        (3, 5644, 131, 174, 70.5, 174),
+        (160, 5644, 118, 154, 57.5, 174),
+        (304, 5642, 115, 162, 57.5, 176),
+        (448, 5643, 114, 167, 57.5, 175),
+        (593, 5643, 117, 168, 56.5, 175),
+        (739, 5643, 118, 169, 54.5, 175),
+        (886, 5643, 117, 168, 51.5, 175),
+        (1032, 5641, 120, 170, 49.5, 177),
+        (1179, 5635, 117, 176, 46.5, 183),
+    ),
+    "sphere_air_anticipate": (
+        (25, 5409, 160, 199, 98.5, 203),
+        (311, 5419, 160, 193, 56.5, 193),
+        (528, 5416, 203, 184, 83.5, 196),
+        (753, 5423, 204, 164, 102.5, 189),
+        (987, 5425, 215, 161, 112.5, 187),
+        (1223, 5431, 221, 159, 120.5, 181),
+        (1467, 5435, 223, 148, 120.5, 177),
+    ),
+    "sphere_ground_anticipate": (
+        (27, 5186, 160, 199, 94, 200),
+        (293, 5192, 160, 193, 67, 194),
+        (514, 5197, 203, 186, 85, 189),
+        (739, 5201, 204, 184, 99, 185),
+        (970, 5203, 215, 181, 107, 183),
+        (1198, 5213, 221, 171, 118, 173),
+        (1437, 5221, 223, 165, 118, 165),
+        (1676, 5213, 221, 171, 118, 173),
+        (1926, 5203, 215, 181, 107, 183),
+        (2173, 5201, 204, 184, 99, 185),
+    ),
     "air_dash_recover": (
         (551, 4374, 196, 183, 98.5, 199),
         (756, 4367, 160, 199, 93.5, 206),
@@ -182,6 +218,8 @@ def phase(name, indexes=None):
 
 
 ACTIONS = {
+    "sphere_ground": Action("Sphere Ground", (phase("sphere_ground_anticipate"), phase("sphere"), phase("sphere_recover"))),
+    "sphere_air": Action("Sphere Air", (phase("sphere_air_anticipate"), phase("sphere"), phase("sphere_recover"))),
     "air_dash": Action("Air Dash", (phase("air_dash_anticipate"), phase("air_dash"), phase("air_dash_recover"))),
     "ground_dash": Action("Ground Dash", (phase("ground_dash_anticipate"), phase("ground_dash"), phase("ground_dash_recover"))),
     "wall_impact": Action("Wall Impact", (phase("wall_impact"),)),
