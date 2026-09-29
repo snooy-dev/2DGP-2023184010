@@ -15,6 +15,7 @@ SOURCE_SHA256 = "0bcedf01ef61f1b2482cd76afed1f76435aa43f899b0e87242c283322997b02
 CANVAS_WIDTH, CANVAS_HEIGHT = 1280, 720
 MARGIN_X, MARGIN_Y = 36, 64
 PREFERRED_SCALE = 2.0
+REPEAT_COUNT = 5
 
 
 @dataclass(frozen=True)
@@ -349,6 +350,8 @@ class Player:
     action_index: int = 0
     frame_index: int = 0
     elapsed: float = 0.0
+    completed_repeats: int = 0
+    mode: str = 'PLAYING'
 
 
 def advance(player, dt):
@@ -356,7 +359,7 @@ def advance(player, dt):
     if not math.isfinite(dt) or dt < 0:
         raise ValueError("dt must be finite and nonnegative")
     action = ACTIONS[ACTION_ORDER[player.action_index]]
-    while dt > 0:
+    while dt > 0 and player.mode == 'PLAYING':
         duration = action.durations[player.frame_index]
         remaining = duration - player.elapsed
         if dt < remaining - 1e-10:
@@ -364,7 +367,14 @@ def advance(player, dt):
             break
         dt = max(0.0, dt - remaining)
         player.elapsed = 0.0
-        player.frame_index = (player.frame_index + 1) % len(action.frames)
+        if player.frame_index + 1 < len(action.frames):
+            player.frame_index += 1
+        else:
+            player.completed_repeats += 1
+            if player.completed_repeats == REPEAT_COUNT:
+                player.mode = 'PAUSING'
+            else:
+                player.frame_index = 0
 
 
 def action_layout(action):
