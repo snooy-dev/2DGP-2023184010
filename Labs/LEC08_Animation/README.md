@@ -62,7 +62,7 @@ python -B Labs/LEC08_Animation/animation_viewer.py --trace --cycles 2
 
 ## 요구사항 구현
 
-- **원본 직접 사용:** `assets/source/hornet_original.png` 한 장을 `load_image`로 한 번 읽습니다.
+- **원본 직접 사용:** `hornet_sheet.png` 한 장을 `load_image`로 한 번 읽습니다.
   같은 이미지의 `clip_draw`에 사각형을 전달합니다. 분할 PNG·새 아틀라스·`clip_image`·외부 실행 데이터 파일을 사용하지 않습니다.
 - **좌표 변환:** 상단 기준 `top`을 `bottom = sheet.h - top - height`로 바꿉니다.
   폭·높이가 다른 프레임을 각자의 실제 사각형으로 그립니다.
@@ -84,4 +84,4 @@ python -B Labs/LEC08_Animation/animation_viewer.py --trace --cycles 2
 ## 검증과 출처
 
 [검증 및 커밋 기록](evidence/acceptance.md)에 기존 테스트와 실행 결과를 기록했습니다. 후속 요청으로 테스트 코드와 `--self-test` 옵션은 제거했습니다.
-원본 출처는 [SOURCES.md](assets/SOURCES.md), 구간 연결 근거는 [ACTION_CATALOG.md](assets/ACTION_CATALOG.md)에 있습니다.
+원본 출처는 [SOURCES.md](SOURCES.md), 구간 연결 근거는 [ACTION_CATALOG.md](ACTION_CATALOG.md)에 있습니다.

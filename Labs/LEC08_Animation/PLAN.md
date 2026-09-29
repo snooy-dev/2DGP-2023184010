@@ -41,10 +41,10 @@
 
 ## 3. 원본과 액션 범위
 
-- 실행용 원본: [assets/source/hornet_original.png](assets/source/hornet_original.png)
+- 실행용 원본: [hornet_sheet.png](hornet_sheet.png)
 - 출처: [The Spriters Resource](https://www.spriters-resource.com/pc_computer/hollowknight/asset/133621/)
-- 상세 출처: [assets/SOURCES.md](assets/SOURCES.md)
-- 전체 액션 구성: [assets/ACTION_CATALOG.md](assets/ACTION_CATALOG.md)
+- 상세 출처: [SOURCES.md](SOURCES.md)
+- 전체 액션 구성: [ACTION_CATALOG.md](ACTION_CATALOG.md)
 - PNG, 알파 포함, **2393 × 13086 px**, **6,055,562 bytes**
 - SHA-256: `0BCEDF01EF61F1B2482CD76AFED1F76435AA43F899B0E87242C283322997B02F`
 
@@ -65,10 +65,9 @@ Labs/LEC08_Animation/
 ├─ animation_viewer.py           # 이 과제의 유일한 구현 소스
 ├─ PLAN.md
 ├─ README.md
-├─ assets/
-│  ├─ SOURCES.md
-│  ├─ ACTION_CATALOG.md
-│  └─ source/hornet_original.png  # 실행에 사용하는 원본 전체 시트
+├─ SOURCES.md
+├─ ACTION_CATALOG.md
+├─ hornet_sheet.png              # 실행에 사용하는 원본 전체 시트
 └─ evidence/
    └─ acceptance.md              # 실제 실행·검증·커밋 기록
 ```

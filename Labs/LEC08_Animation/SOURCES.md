@@ -2,7 +2,7 @@
 
 ## 확보한 원본
 
-- 파일: `source/hornet_original.png` (이 문서 기준 상대 경로)
+- 파일: `hornet_sheet.png` (이 문서 기준 상대 경로)
 - 게임 / 캐릭터: **Hollow Knight 본편 / Hornet Protector · Hornet Sentinel**
 - 원작 게임 및 캐릭터: **Team Cherry**
 - 배포 사이트: **The Spriters Resource**
@@ -21,7 +21,7 @@
 
 ## 액션 선정과 원본 렌더링 — 2026-09-29 갱신
 
-원본 전체의 라벨과 호넷 포함 여부를 확인했다. 최신 액션 구성은 [ACTION_CATALOG.md](ACTION_CATALOG.md), 구현 계획은 [PLAN.md](../PLAN.md)에 기록한다.
+원본 전체의 라벨과 호넷 포함 여부를 확인했다. 최신 액션 구성은 [ACTION_CATALOG.md](ACTION_CATALOG.md), 구현 계획은 [PLAN.md](PLAN.md)에 기록한다.
 
 - 액션은 하나의 동작이고 프레임은 그 동작을 이루는 한 장면이다. 준비·실행·회복을 연결해 한 액션으로 재생한다.
 - 최소 4종을 상한으로 삼지 않는다. 지상/공중 변형을 포함한 17개 액션을 대상으로 한다.
@@ -43,4 +43,4 @@
 - 공개 다운로드 가능하다는 사실이 게임 아트의 저작권 양도나 CC/오픈소스 라이선스 부여를 뜻하지 않는다. 이 PNG에 적용되는 별도의 자유 이용 라이선스는 확인하지 못했다.
 - 이 과제에서는 원작 Team Cherry, 시트 업로더 Lulubalu, 배포 사이트와 원본 URL을 크레딧으로 유지한다. 과제 제출 설명에도 출처와 가변 프레임/서로 다른 모션 길이 지원 여부를 실제 구현에 맞게 적는다.
 
-이 문서의 확보 당시 기록 이후 뷰어 구현·자가검증·실제 재생·단계별 Git 커밋을 완료했다. 원본 해시는 동일하다. 최종 결과는 [acceptance.md](../evidence/acceptance.md)를 참고한다. 원격 푸시는 수행하지 않았다.
+이 문서의 확보 당시 기록 이후 뷰어 구현·자가검증·실제 재생·단계별 Git 커밋을 완료했다. 원본 해시는 동일하다. 최종 결과는 [acceptance.md](evidence/acceptance.md)를 참고한다. 원격 푸시는 수행하지 않았다.

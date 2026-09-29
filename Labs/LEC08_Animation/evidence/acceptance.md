@@ -26,7 +26,7 @@
 아래 원본 해시와 최초 테스트 설명은 당시 검증 기록이며 현재 실행 조건이 아니다.
 
 새 구현 소스는 [animation_viewer.py](../animation_viewer.py) 하나입니다.
-추가 스프라이트는 원본 `assets/source/hornet_original.png` 한 장뿐입니다.
+추가 스프라이트는 원본 `hornet_sheet.png` 한 장뿐입니다.
 기존 수업 Python/PNG, 다른 Labs, Slides 파일은 변경하지 않았습니다.
 프레임 이미지·패킹 이미지·전처리 도구·별도 테스트 모듈·실행용 JSON을 만들지 않았습니다.
 

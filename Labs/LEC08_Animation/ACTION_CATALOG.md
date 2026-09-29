@@ -1,7 +1,7 @@
 # 호넷 액션·프레임 분류표
 
-> 감사일: 2026-09-29 · 원본: [hornet_original.png](source/hornet_original.png)
-> 상태: 구현 및 검증 완료. 아래 17개 액션의 참조 수는 실제 코드와 일치하며 고유 좌표는 190개, 공유·역순을 포함한 참조는 207개다. 정확한 사각형·피벗·지속 시간은 [animation_viewer.py](../animation_viewer.py), 검증 결과는 [acceptance.md](../evidence/acceptance.md)에 있다. 아래의 선정 근거와 예정값은 착수 기록으로 보존한다.
+> 감사일: 2026-09-29 · 원본: [hornet_sheet.png](hornet_sheet.png)
+> 상태: 구현 및 검증 완료. 아래 17개 액션의 참조 수는 실제 코드와 일치하며 고유 좌표는 190개, 공유·역순을 포함한 참조는 207개다. 정확한 사각형·피벗·지속 시간은 [animation_viewer.py](animation_viewer.py), 검증 결과는 [acceptance.md](evidence/acceptance.md)에 있다. 아래의 선정 근거와 예정값은 착수 기록으로 보존한다.
 
 ## 1. 용어와 채택 기준
 

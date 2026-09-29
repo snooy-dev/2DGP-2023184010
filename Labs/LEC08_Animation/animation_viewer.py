@@ -10,7 +10,7 @@ import math
 from time import perf_counter
 
 ROOT = Path(__file__).resolve().parent
-SOURCE_PATH = ROOT / "assets" / "source" / "hornet_original.png"
+SOURCE_PATH = ROOT / "hornet_sheet.png"
 CANVAS_WIDTH, CANVAS_HEIGHT = 1280, 720
 MARGIN_X, MARGIN_Y = 36, 64
 PREFERRED_SCALE = 2.0
