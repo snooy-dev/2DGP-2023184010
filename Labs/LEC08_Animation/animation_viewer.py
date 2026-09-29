@@ -652,6 +652,51 @@ def self_test():
                 with self.assertRaises(ValueError):
                     advance(player, dt)
 
+        def test_exit_events_during_playback_and_pause(self):
+            import contextlib
+            import io
+            from types import SimpleNamespace
+            from unittest.mock import Mock, patch
+
+            for paused in (False, True):
+                for event_type in (1, 2):
+                    with self.subTest(paused=paused, event_type=event_type):
+                        sheet = SimpleNamespace(w=SOURCE_SIZE[0], h=SOURCE_SIZE[1], clip_draw=Mock())
+                        renderer = SimpleNamespace(
+                            open_canvas=Mock(), close_canvas=Mock(), hide_lattice=Mock(),
+                            load_font=Mock(return_value=None), load_image=Mock(return_value=sheet),
+                            clear_canvas=Mock(), update_canvas=Mock(), delay=Mock(),
+                            SDL_QUIT=1, SDL_KEYDOWN=2, SDLK_ESCAPE=27,
+                            get_events=Mock(side_effect=[[], [SimpleNamespace(type=event_type, key=27)]]),
+                        )
+                        dt = REPEAT_COUNT * sum(ACTIONS[ACTION_ORDER[0]].durations) + 0.2 if paused else 0.01
+                        clock = Mock(side_effect=[100.0, 100.0 + dt])
+                        with patch.dict('sys.modules', pico2d=renderer), \
+                             patch.dict(main.__globals__, perf_counter=clock), \
+                             contextlib.redirect_stdout(io.StringIO()):
+                            main([])
+                        renderer.load_image.assert_called_once_with(str(SOURCE_PATH))
+                        renderer.close_canvas.assert_called_once()
+                        expected_id = ACTIONS[ACTION_ORDER[0]].frames[-1 if paused else 0]
+                        rect = FRAME_RECTS[expected_id].rect
+                        args = sheet.clip_draw.call_args.args
+                        self.assertEqual((args[0], SOURCE_SIZE[1] - args[1] - args[3], args[2], args[3]), rect)
+
+        def test_canvas_closes_when_image_loading_fails(self):
+            import contextlib
+            import io
+            from types import SimpleNamespace
+            from unittest.mock import Mock, patch
+
+            renderer = SimpleNamespace(
+                open_canvas=Mock(), close_canvas=Mock(), hide_lattice=Mock(),
+                load_font=Mock(return_value=None), load_image=Mock(side_effect=OSError('texture failed')),
+            )
+            with patch.dict('sys.modules', pico2d=renderer), contextlib.redirect_stdout(io.StringIO()):
+                with self.assertRaisesRegex(OSError, 'texture failed'):
+                    main([])
+            renderer.close_canvas.assert_called_once()
+
         def test_reject_bad_metadata(self):
             frame_id = next(iter(FRAME_RECTS))
             for rect in ((-1, 0, 10, 10), (0, 0, 0, 10), (2390, 0, 10, 10)):
