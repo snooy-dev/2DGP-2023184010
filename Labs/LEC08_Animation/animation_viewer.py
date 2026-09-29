@@ -43,6 +43,22 @@ class Action:
 # left, top, width, height, pivot_x, pivot_y; top-left source coordinates.
 # Measured from the unchanged sheet, including every nonzero-alpha pixel.
 SOURCE_FRAMES = {
+    "flourish": (
+        (46, 79, 183, 215, 136, 244),
+        (404, 117, 194, 177, 139, 206),
+        (757, 108, 195, 187, 147, 215),
+        (1123, 92, 191, 201, 142, 231),
+        (1507, 102, 176, 189, 119, 221),
+        (1902, 99, 148, 193, 85, 224),
+        (3, 400, 232, 227, 179, 227),
+        (384, 430, 319, 166, 159, 197),
+        (745, 385, 297, 211, 159, 242),
+        (1106, 356, 268, 240, 159, 271),
+        (1467, 327, 336, 269, 159, 300),
+        (1828, 405, 331, 191, 159, 222),
+        (23, 647, 240, 253, 159, 284),
+        (396, 716, 195, 187, 147, 215),
+    ),
     "run": (
         (8, 1195, 154, 185, 74.5, 187),
         (170, 1194, 153, 174, 74.5, 188),
@@ -76,6 +92,7 @@ def phase(name, indexes=None):
 
 
 ACTIONS = {
+    "flourish": Action("Flourish", (phase("flourish"),), fps=12),
     "idle": Action("Idle", (phase("idle"),), fps=8),
     "run": Action("Run", (phase("run"),), fps=14),
 }
