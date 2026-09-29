@@ -1,7 +1,7 @@
 # Drill #8 — Hornet Animation Viewer
 
 Hollow Knight 호넷의 **17개 액션**을 원본 시트에서 직접 재생하는 Pico2d 과제입니다.
-과제 구현·프레임 좌표·검수·테스트는 [animation_viewer.py](animation_viewer.py) 한 파일에 있습니다.
+과제 구현·프레임 좌표·검수는 [animation_viewer.py](animation_viewer.py) 한 파일에 있습니다.
 기존 수업 예제 `character_runs.py`는 보존했습니다.
 
 ## 실행
@@ -23,14 +23,12 @@ python -B Labs/LEC08_Animation/animation_viewer.py
 정지 중에도 이벤트를 처리합니다. **I 키**로 현재 장면을 멈추고 검수 모드에 들어가며,
 다시 **I 키**를 누르면 검수 진입 전의 재생 위치와 반복·정지 상태에서 이어 재생합니다.
 
-## 검수와 자가검증
+## 검수
 
 ```powershell
-python -B Labs/LEC08_Animation/animation_viewer.py --self-test
 python -B Labs/LEC08_Animation/animation_viewer.py --trace --cycles 2
 ```
 
-- `--self-test`: 창 없이 표준 라이브러리만으로 14개 테스트를 실행합니다. Pico2d가 없어도 사용할 수 있습니다.
 - **I 키**: 자동 재생 ↔ 검수 모드 전환. 검수 중 좌/우는 프레임, 위/아래는 액션 이동입니다. 콘솔에는 원본 사각형과 기준점이 표시됩니다. 창에 `INSPECT` 표시와 해당 모드의 조작 안내가 나타납니다. 기존 `--inspect`·`--frame` 명령줄 옵션은 제거했습니다.
 - `--trace`: 액션 시작, 반복 완료, 정지 시작의 누적 재생 시간을 출력합니다. 화면 갱신마다 출력하지 않습니다.
 - `--cycles N`: 실제 재생 검수를 위해 N사이클 후 종료합니다. 생략하면 무한 반복합니다.
@@ -86,5 +84,5 @@ python -B Labs/LEC08_Animation/animation_viewer.py --trace --cycles 2
 
 ## 검증과 출처
 
-[검증 및 커밋 기록](evidence/acceptance.md)에 실제 테스트와 실행 결과를 기록했습니다.
+[검증 및 커밋 기록](evidence/acceptance.md)에 기존 테스트와 실행 결과를 기록했습니다. 후속 요청으로 테스트 코드와 `--self-test` 옵션은 제거했습니다.
 원본 출처는 [SOURCES.md](assets/SOURCES.md), 구간 연결 근거는 [ACTION_CATALOG.md](assets/ACTION_CATALOG.md)에 있습니다.
