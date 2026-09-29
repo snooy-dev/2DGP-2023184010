@@ -43,6 +43,21 @@ class Action:
 # left, top, width, height, pivot_x, pivot_y; top-left source coordinates.
 # Measured from the unchanged sheet, including every nonzero-alpha pixel.
 SOURCE_FRAMES = {
+    "counter_end": (
+        (1383, 8036, 112, 210, 56, 210),
+        (1498, 8034, 109, 211, 56, 212),
+    ),
+    "counter_stance": (
+        (599, 8037, 184, 140, 92.5, 140),
+        (787, 8042, 184, 133, 92.5, 135),
+        (975, 8037, 183, 138, 92.5, 140),
+        (1163, 8034, 184, 140, 92.5, 143),
+    ),
+    "counter_anticipate": (
+        (56, 8034, 109, 211, 39.5, 214),
+        (244, 8036, 112, 210, 39.5, 212),
+        (379, 8108, 184, 140, 92.5, 140),
+    ),
     "throw_recover": (
         (11, 7500, 231, 137, 112, 137),
         (259, 7504, 203, 132, 107, 133),
@@ -246,6 +261,7 @@ def phase(name, indexes=None):
 
 
 ACTIONS = {
+    "counter": Action("Counter", (phase("counter_anticipate"), phase("counter_stance"), phase("counter_end"))),
     "throw": Action("Throw", (phase("throw_anticipate"), phase("throw"), phase("throw_recover"))),
     "sphere_ground": Action("Sphere Ground", (phase("sphere_ground_anticipate"), phase("sphere"), phase("sphere_recover"))),
     "sphere_air": Action("Sphere Air", (phase("sphere_air_anticipate"), phase("sphere"), phase("sphere_recover"))),
