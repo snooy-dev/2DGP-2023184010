@@ -343,7 +343,11 @@ ACTIONS = {
     "idle": Action("Idle", (phase("idle"),), fps=8),
     "run": Action("Run", (phase("run"),), fps=14),
 }
-ACTION_ORDER = tuple(ACTIONS)
+ACTION_ORDER = (
+    "flourish", "idle", "run", "jump", "hard_land", "wall_impact", "evade",
+    "ground_dash", "air_dash", "sphere_ground", "sphere_air", "throw",
+    "counter", "counter_attack", "barb_throw", "stagger", "wounded",
+)
 
 
 @dataclass
@@ -353,14 +357,15 @@ class Player:
     elapsed: float = 0.0
     completed_repeats: int = 0
     mode: str = 'PLAYING'
+    cycles: int = 0
 
 
 def advance(player, dt):
     """Consume elapsed time, carrying overshoot across every frame boundary."""
     if not math.isfinite(dt) or dt < 0:
         raise ValueError("dt must be finite and nonnegative")
-    action = ACTIONS[ACTION_ORDER[player.action_index]]
     while dt > 0:
+        action = ACTIONS[ACTION_ORDER[player.action_index]]
         duration = PAUSE_SECONDS if player.mode == 'PAUSING' else action.durations[player.frame_index]
         remaining = duration - player.elapsed
         if dt < remaining - 1e-10:
@@ -369,6 +374,9 @@ def advance(player, dt):
         dt = max(0.0, dt - remaining)
         player.elapsed = 0.0
         if player.mode == 'PAUSING':
+            player.action_index = (player.action_index + 1) % len(ACTION_ORDER)
+            if player.action_index == 0:
+                player.cycles += 1
             player.mode = 'PLAYING'
             player.frame_index = 0
             player.completed_repeats = 0
@@ -431,6 +439,8 @@ def draw_source(sheet, rect, scale=1.8):
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--cycles", type=int,
+                        help="Exit after complete cycles (default: repeat forever)")
     parser.add_argument("--inspect", choices=ACTION_ORDER,
                         help="Freeze an action and inspect its original frame")
     parser.add_argument("--frame", type=int, default=0,
@@ -440,6 +450,8 @@ def main(argv=None):
     parser.add_argument("--seconds", type=float,
                         help="Close after this many seconds (rendering smoke checks)")
     args = parser.parse_args(argv)
+    if args.cycles is not None and (args.cycles <= 0 or args.inspect or args.source_top is not None):
+        parser.error("--cycles requires normal playback and a positive count")
     if args.seconds is not None and args.seconds <= 0:
         parser.error("--seconds must be positive")
     if args.source_top is not None and not 0 <= args.source_top < SOURCE_SIZE[1]:
@@ -497,6 +509,8 @@ def main(argv=None):
                 advance(player, now - previous)
                 action_id = ACTION_ORDER[player.action_index]
                 frame_index = player.frame_index
+                if args.cycles is not None and player.cycles >= args.cycles:
+                    break
             previous = now
             p.clear_canvas()
             if args.source_top is None:
@@ -506,6 +520,10 @@ def main(argv=None):
                     font.draw(36, CANVAS_HEIGHT - 32,
                               f'HORNET  /  {ACTIONS[action_id].label}  /  '
                               f'Frame {frame_index + 1}/{len(ACTIONS[action_id].frames)}')
+                    if not args.inspect:
+                        status = 'HOLD 1.0s' if player.mode == 'PAUSING' else 'PLAYING'
+                        font.draw(830, CANVAS_HEIGHT - 32,
+                                  f'{status}  Done {player.completed_repeats}/{REPEAT_COUNT}')
                     font.draw(36, 30, 'ESC: close    Inspect: Left/Right = frame, Up/Down = action')
             else:
                 height = min(CANVAS_HEIGHT, sheet.h - args.source_top)
