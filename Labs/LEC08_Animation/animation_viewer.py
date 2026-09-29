@@ -43,6 +43,25 @@ class Action:
 # left, top, width, height, pivot_x, pivot_y; top-left source coordinates.
 # Measured from the unchanged sheet, including every nonzero-alpha pixel.
 SOURCE_FRAMES = {
+    "barb_throw_recover": (
+        (20, 8925, 215, 202, 99.5, 203),
+        (253, 8918, 200, 209, 102.5, 210),
+        (484, 8915, 195, 212, 107.5, 213),
+        (711, 8912, 188, 215, 116.5, 216),
+        (949, 8913, 183, 215, 114.5, 215),
+    ),
+    "barb_throw": (
+        (719, 8677, 113, 175, 68.5, 176),
+        (869, 8664, 126, 189, 58.5, 189),
+        (1009, 8664, 126, 189, 58.5, 189),
+        (1149, 8664, 126, 189, 58.5, 189),
+    ),
+    "barb_throw_anticipate": (
+        (3, 8676, 142, 211, 84, 214),
+        (230, 8678, 108, 210, 28, 212),
+        (391, 8688, 120, 202, 38, 202),
+        (553, 8665, 101, 224, 47, 225),
+    ),
     "counter_attack_recover": (
         (1855, 8328, 233, 141, 115.5, 141),
         (2092, 8270, 147, 199, 118.5, 199),
@@ -276,6 +295,7 @@ def phase(name, indexes=None):
 
 
 ACTIONS = {
+    "barb_throw": Action("Barb Throw", (phase("barb_throw_anticipate"), phase("barb_throw"), phase("barb_throw_recover"))),
     "counter_attack": Action("Counter Attack", (phase("counter_attack_anticipate"), phase("counter_attack_1"), phase("counter_attack_2"), phase("counter_attack_recover")), duration_overrides=((3, 0.12), (4, 0.12))),
     "counter": Action("Counter", (phase("counter_anticipate"), phase("counter_stance"), phase("counter_end"))),
     "throw": Action("Throw", (phase("throw_anticipate"), phase("throw"), phase("throw_recover"))),
