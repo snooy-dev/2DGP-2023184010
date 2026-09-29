@@ -697,6 +697,18 @@ def self_test():
                     main([])
             renderer.close_canvas.assert_called_once()
 
+        def test_invalid_metadata_is_reported_before_frame_access(self):
+            import contextlib
+            import io
+            from unittest.mock import patch
+
+            errors = io.StringIO()
+            with patch.dict(FRAME_RECTS, clear=True), contextlib.redirect_stderr(errors):
+                with self.assertRaises(SystemExit) as failure:
+                    main([])
+            self.assertEqual(failure.exception.code, 1)
+            self.assertIn('missing source frame', errors.getvalue())
+
         def test_reject_bad_metadata(self):
             frame_id = next(iter(FRAME_RECTS))
             for rect in ((-1, 0, 10, 10), (0, 0, 0, 10), (2390, 0, 10, 10)):
@@ -752,6 +764,11 @@ def main(argv=None):
         parser.error('--inspect and --source-top cannot be combined')
     if args.frame is not None and not args.inspect:
         parser.error("--frame requires --inspect")
+    try:
+        validate_data()
+        verify_source()
+    except (OSError, ValueError) as exc:
+        parser.exit(1, f'Cannot start Hornet viewer: {exc}\n')
     action_id = args.inspect or ACTION_ORDER[0]
     frame_index = args.frame if args.frame is not None else 0
     if not 0 <= frame_index < len(ACTIONS[action_id].frames):
@@ -764,10 +781,8 @@ def main(argv=None):
               flush=True)
     report()
     try:
-        validate_data()
-        verify_source()
         import pico2d as p
-    except (OSError, ValueError, ImportError) as exc:
+    except (OSError, ImportError) as exc:
         parser.exit(1, f'Cannot start Hornet viewer: {exc}\nInstall renderer: python -m pip install pico2d\n')
     opened = False
     try:
