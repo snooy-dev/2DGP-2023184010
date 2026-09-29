@@ -43,6 +43,24 @@ class Action:
 # left, top, width, height, pivot_x, pivot_y; top-left source coordinates.
 # Measured from the unchanged sheet, including every nonzero-alpha pixel.
 SOURCE_FRAMES = {
+    "run": (
+        (8, 1195, 154, 185, 74.5, 187),
+        (170, 1194, 153, 174, 74.5, 188),
+        (333, 1195, 149, 186, 73.5, 187),
+        (489, 1192, 158, 190, 79.5, 190),
+        (656, 1195, 154, 186, 74.5, 187),
+        (818, 1194, 153, 174, 74.5, 188),
+        (981, 1196, 149, 184, 73.5, 186),
+        (1137, 1193, 158, 188, 79.5, 189),
+    ),
+    "idle": (
+        (3, 954, 183, 215, 92, 215),
+        (190, 954, 183, 215, 92, 215),
+        (378, 954, 182, 215, 91, 215),
+        (565, 955, 181, 214, 91, 214),
+        (752, 954, 181, 215, 91, 215),
+        (938, 954, 182, 215, 92, 215),
+    ),
 }
 FRAME_RECTS = {
     f"{phase}:{i}": Frame(phase, values[:4], *values[4:])
@@ -58,6 +76,8 @@ def phase(name, indexes=None):
 
 
 ACTIONS = {
+    "idle": Action("Idle", (phase("idle"),), fps=8),
+    "run": Action("Run", (phase("run"),), fps=14),
 }
 ACTION_ORDER = tuple(ACTIONS)
 
@@ -104,7 +124,7 @@ def main(argv=None):
                 break
             p.clear_canvas()
             if args.source_top is None:
-                draw_source(sheet, (3, 22, 358, 301))
+                draw_source(sheet, FRAME_RECTS[ACTIONS[ACTION_ORDER[0]].frames[0]].rect)
             else:
                 height = min(CANVAS_HEIGHT, sheet.h - args.source_top)
                 draw_source(sheet, (0, args.source_top, CANVAS_WIDTH, height), 1)
