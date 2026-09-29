@@ -92,6 +92,10 @@ def draw_source(sheet, rect, scale=1.8):
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--inspect", choices=ACTION_ORDER,
+                        help="Freeze an action and inspect its original frame")
+    parser.add_argument("--frame", type=int, default=0,
+                        help="Zero-based frame for --inspect")
     parser.add_argument("--source-top", type=int,
                         help="Inspect an unmodified 960x720 region of the source sheet")
     parser.add_argument("--seconds", type=float,
@@ -101,6 +105,19 @@ def main(argv=None):
         parser.error("--seconds must be positive")
     if args.source_top is not None and not 0 <= args.source_top < SOURCE_SIZE[1]:
         parser.error("--source-top is outside the sheet")
+    if args.frame and not args.inspect:
+        parser.error("--frame requires --inspect")
+    action_id = args.inspect or ACTION_ORDER[0]
+    frame_index = args.frame
+    if not 0 <= frame_index < len(ACTIONS[action_id].frames):
+        parser.error("--frame is outside the selected action")
+    def report():
+        frame_id = ACTIONS[action_id].frames[frame_index]
+        frame = FRAME_RECTS[frame_id]
+        print(f"{action_id} [{frame_index}/{len(ACTIONS[action_id].frames)-1}] "
+              f"{frame_id}: rect={frame.rect} pivot=({frame.pivot_x}, {frame.pivot_y})",
+              flush=True)
+    report()
     import pico2d as p
     opened = False
     try:
@@ -118,13 +135,24 @@ def main(argv=None):
                     event.type == p.SDL_KEYDOWN and event.key == p.SDLK_ESCAPE
                 ):
                     running = False
+                elif args.inspect and event.type == p.SDL_KEYDOWN:
+                    if event.key in (p.SDLK_RIGHT, p.SDLK_LEFT):
+                        step = 1 if event.key == p.SDLK_RIGHT else -1
+                        frame_index = (frame_index + step) % len(ACTIONS[action_id].frames)
+                        report()
+                    elif event.key in (p.SDLK_UP, p.SDLK_DOWN):
+                        step = 1 if event.key == p.SDLK_DOWN else -1
+                        action_id = ACTION_ORDER[(ACTION_ORDER.index(action_id) + step)
+                                                 % len(ACTION_ORDER)]
+                        frame_index = 0
+                        report()
             if not running:
                 break
             if args.seconds is not None and perf_counter() - start >= args.seconds:
                 break
             p.clear_canvas()
             if args.source_top is None:
-                draw_source(sheet, FRAME_RECTS[ACTIONS[ACTION_ORDER[0]].frames[0]].rect)
+                draw_source(sheet, FRAME_RECTS[ACTIONS[action_id].frames[frame_index]].rect)
             else:
                 height = min(CANVAS_HEIGHT, sheet.h - args.source_top)
                 draw_source(sheet, (0, args.source_top, CANVAS_WIDTH, height), 1)
