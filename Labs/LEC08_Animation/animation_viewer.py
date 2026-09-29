@@ -43,6 +43,34 @@ class Action:
 # left, top, width, height, pivot_x, pivot_y; top-left source coordinates.
 # Measured from the unchanged sheet, including every nonzero-alpha pixel.
 SOURCE_FRAMES = {
+    "hard_land": (
+        (668, 1941, 183, 155, 88.5, 165),
+        (877, 1942, 192, 156, 89.5, 164),
+        (1073, 1941, 201, 163, 103.5, 165),
+        (1283, 1930, 202, 176, 103.5, 176),
+    ),
+    "land": (
+        (11, 1917, 194, 177, 93.5, 178),
+        (209, 1908, 195, 187, 101.5, 187),
+        (425, 1878, 189, 216, 91.5, 217),
+    ),
+    "jump": (
+        (49, 1650, 136, 205, 48, 205),
+        (243, 1651, 127, 204, 45, 204),
+        (447, 1651, 115, 202, 32, 204),
+        (622, 1638, 132, 191, 48, 217),
+        (767, 1633, 187, 195, 94, 222),
+        (978, 1626, 160, 199, 74, 229),
+        (1171, 1627, 157, 205, 72, 228),
+        (1359, 1626, 161, 202, 75, 229),
+        (1556, 1627, 155, 201, 69, 228),
+    ),
+    "jump_anticipate": (
+        (18, 1441, 183, 155, 88.5, 163),
+        (227, 1442, 192, 156, 89.5, 162),
+        (423, 1441, 201, 163, 103.5, 163),
+        (680, 1405, 143, 192, 56.5, 199),
+    ),
     "flourish": (
         (46, 79, 183, 215, 136, 244),
         (404, 117, 194, 177, 139, 206),
@@ -92,6 +120,8 @@ def phase(name, indexes=None):
 
 
 ACTIONS = {
+    "jump": Action("Jump", (phase("jump_anticipate"), phase("jump"), phase("land"))),
+    "hard_land": Action("Hard Land", (phase("hard_land"), phase("land", (1, 2)))),
     "flourish": Action("Flourish", (phase("flourish"),), fps=12),
     "idle": Action("Idle", (phase("idle"),), fps=8),
     "run": Action("Run", (phase("run"),), fps=14),
