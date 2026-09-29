@@ -5,6 +5,7 @@ Run with Python and pico2d. All frame data and viewer code live in this file.
 import argparse
 from dataclasses import dataclass
 from pathlib import Path
+import math
 from time import perf_counter
 
 ROOT = Path(__file__).resolve().parent
@@ -343,6 +344,29 @@ ACTIONS = {
 ACTION_ORDER = tuple(ACTIONS)
 
 
+@dataclass
+class Player:
+    action_index: int = 0
+    frame_index: int = 0
+    elapsed: float = 0.0
+
+
+def advance(player, dt):
+    """Consume elapsed time, carrying overshoot across every frame boundary."""
+    if not math.isfinite(dt) or dt < 0:
+        raise ValueError("dt must be finite and nonnegative")
+    action = ACTIONS[ACTION_ORDER[player.action_index]]
+    while dt > 0:
+        duration = action.durations[player.frame_index]
+        remaining = duration - player.elapsed
+        if dt < remaining - 1e-10:
+            player.elapsed += dt
+            break
+        dt = max(0.0, dt - remaining)
+        player.elapsed = 0.0
+        player.frame_index = (player.frame_index + 1) % len(action.frames)
+
+
 def action_layout(action):
     """One scale per entire action; leave room for every frame and its effects."""
     frames = [FRAME_RECTS[frame_id] for frame_id in action.frames]
@@ -429,7 +453,8 @@ def main(argv=None):
         if (sheet.w, sheet.h) != SOURCE_SIZE:
             raise ValueError("Unexpected original sheet dimensions")
         print(f"Loaded original: {sheet.w} x {sheet.h}", flush=True)
-        start = perf_counter()
+        start = previous = perf_counter()
+        player = Player()
         running = True
         while running:
             for event in p.get_events():
@@ -452,6 +477,12 @@ def main(argv=None):
                 break
             if args.seconds is not None and perf_counter() - start >= args.seconds:
                 break
+            now = perf_counter()
+            if not args.inspect and args.source_top is None:
+                advance(player, now - previous)
+                action_id = ACTION_ORDER[player.action_index]
+                frame_index = player.frame_index
+            previous = now
             p.clear_canvas()
             if args.source_top is None:
                 draw_frame(sheet, FRAME_RECTS[ACTIONS[action_id].frames[frame_index]],
