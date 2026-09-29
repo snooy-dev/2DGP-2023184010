@@ -16,6 +16,7 @@ CANVAS_WIDTH, CANVAS_HEIGHT = 1280, 720
 MARGIN_X, MARGIN_Y = 36, 64
 PREFERRED_SCALE = 2.0
 REPEAT_COUNT = 5
+PAUSE_SECONDS = 1.0
 
 
 @dataclass(frozen=True)
@@ -359,15 +360,19 @@ def advance(player, dt):
     if not math.isfinite(dt) or dt < 0:
         raise ValueError("dt must be finite and nonnegative")
     action = ACTIONS[ACTION_ORDER[player.action_index]]
-    while dt > 0 and player.mode == 'PLAYING':
-        duration = action.durations[player.frame_index]
+    while dt > 0:
+        duration = PAUSE_SECONDS if player.mode == 'PAUSING' else action.durations[player.frame_index]
         remaining = duration - player.elapsed
         if dt < remaining - 1e-10:
             player.elapsed += dt
             break
         dt = max(0.0, dt - remaining)
         player.elapsed = 0.0
-        if player.frame_index + 1 < len(action.frames):
+        if player.mode == 'PAUSING':
+            player.mode = 'PLAYING'
+            player.frame_index = 0
+            player.completed_repeats = 0
+        elif player.frame_index + 1 < len(action.frames):
             player.frame_index += 1
         else:
             player.completed_repeats += 1
