@@ -43,6 +43,31 @@ class Action:
 # left, top, width, height, pivot_x, pivot_y; top-left source coordinates.
 # Measured from the unchanged sheet, including every nonzero-alpha pixel.
 SOURCE_FRAMES = {
+    "wounded": (
+        (10, 10397, 195, 187, 99, 199),
+        (222, 10381, 185, 213, 102, 215),
+        (437, 10382, 184, 214, 102, 214),
+        (649, 10383, 185, 212, 105, 213),
+        (863, 10382, 187, 213, 106, 214),
+        (1079, 10382, 188, 213, 105, 214),
+        (1295, 10381, 187, 211, 104, 215),
+    ),
+    "stun": (
+        (3, 10172, 205, 175, 106, 186),
+        (229, 10212, 201, 132, 95, 146),
+        (446, 10186, 180, 170, 93, 172),
+        (661, 10189, 179, 169, 93, 169),
+        (876, 10190, 179, 165, 93, 168),
+        (1091, 10191, 179, 164, 93, 167),
+    ),
+    "stun_air": (
+        (36, 9983, 233, 166, 117, 166),
+        (325, 9989, 241, 135, 131, 160),
+        (609, 9957, 242, 187, 150, 192),
+        (913, 9955, 231, 155, 149, 194),
+        (1306, 9923, 154, 171, 59, 226),
+        (1602, 9970, 215, 153, 66, 179),
+    ),
     "barb_throw_recover": (
         (20, 8925, 215, 202, 99.5, 203),
         (253, 8918, 200, 209, 102.5, 210),
@@ -295,6 +320,8 @@ def phase(name, indexes=None):
 
 
 ACTIONS = {
+    "stagger": Action("Stagger", (phase("stun_air"), phase("stun"), phase("stun", (1, 0)))),
+    "wounded": Action("Wounded", (phase("stun", (0, 1)), phase("wounded"))),
     "barb_throw": Action("Barb Throw", (phase("barb_throw_anticipate"), phase("barb_throw"), phase("barb_throw_recover"))),
     "counter_attack": Action("Counter Attack", (phase("counter_attack_anticipate"), phase("counter_attack_1"), phase("counter_attack_2"), phase("counter_attack_recover")), duration_overrides=((3, 0.12), (4, 0.12))),
     "counter": Action("Counter", (phase("counter_anticipate"), phase("counter_stance"), phase("counter_end"))),
