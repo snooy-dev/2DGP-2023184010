@@ -3,6 +3,7 @@
 Run with Python and pico2d. All frame data and viewer code live in this file.
 """
 import argparse
+from dataclasses import dataclass
 from pathlib import Path
 from time import perf_counter
 
@@ -11,6 +12,54 @@ SOURCE_PATH = ROOT / "assets" / "source" / "hornet_original.png"
 SOURCE_SIZE = (2393, 13086)
 SOURCE_SHA256 = "0bcedf01ef61f1b2482cd76afed1f76435aa43f899b0e87242c283322997b02f"
 CANVAS_WIDTH, CANVAS_HEIGHT = 960, 720
+
+
+@dataclass(frozen=True)
+class Frame:
+    """One source rectangle and its local anchor; no new image is created."""
+    source_label: str
+    rect: tuple[int, int, int, int]
+    pivot_x: float
+    pivot_y: float
+
+
+@dataclass(frozen=True)
+class Action:
+    label: str
+    phases: tuple[tuple[str, tuple[str, ...]], ...]
+    fps: float = 12.0
+    duration_overrides: tuple[tuple[int, float], ...] = ()
+
+    @property
+    def frames(self):
+        return tuple(frame_id for _, frames in self.phases for frame_id in frames)
+
+    @property
+    def durations(self):
+        overrides = dict(self.duration_overrides)
+        return tuple(overrides.get(i, 1 / self.fps) for i in range(len(self.frames)))
+
+
+# left, top, width, height, pivot_x, pivot_y; top-left source coordinates.
+# Measured from the unchanged sheet, including every nonzero-alpha pixel.
+SOURCE_FRAMES = {
+}
+FRAME_RECTS = {
+    f"{phase}:{i}": Frame(phase, values[:4], *values[4:])
+    for phase, frames in SOURCE_FRAMES.items()
+    for i, values in enumerate(frames)
+}
+
+
+def phase(name, indexes=None):
+    """References may reuse a rectangle, including reverse recovery frames."""
+    indexes = range(len(SOURCE_FRAMES[name])) if indexes is None else indexes
+    return name, tuple(f"{name}:{i}" for i in indexes)
+
+
+ACTIONS = {
+}
+ACTION_ORDER = tuple(ACTIONS)
 
 
 def draw_source(sheet, rect, scale=1.8):
@@ -68,4 +117,3 @@ def main(argv=None):
 
 if __name__ == "__main__":
     main()
-
