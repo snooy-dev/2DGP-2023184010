@@ -43,6 +43,22 @@ class Action:
 # left, top, width, height, pivot_x, pivot_y; top-left source coordinates.
 # Measured from the unchanged sheet, including every nonzero-alpha pixel.
 SOURCE_FRAMES = {
+    "evade": (
+        (1155, 2130, 191, 210, 94, 210),
+        (1350, 2130, 192, 205, 98, 210),
+        (1549, 2129, 191, 210, 98, 211),
+    ),
+    "evade_anticipate": (
+        (555, 2132, 176, 214, 92.5, 214),
+        (743, 2129, 184, 216, 92.5, 217),
+        (936, 2146, 174, 200, 87.5, 200),
+    ),
+    "wall_impact": (
+        (3, 2132, 109, 209, 63.5, 209),
+        (133, 2128, 125, 205, 63.5, 213),
+        (263, 2128, 125, 206, 63.5, 213),
+        (393, 2128, 123, 207, 63.5, 213),
+    ),
     "hard_land": (
         (668, 1941, 183, 155, 88.5, 165),
         (877, 1942, 192, 156, 89.5, 164),
@@ -120,6 +136,8 @@ def phase(name, indexes=None):
 
 
 ACTIONS = {
+    "wall_impact": Action("Wall Impact", (phase("wall_impact"),)),
+    "evade": Action("Evade", (phase("evade_anticipate"), phase("evade"))),
     "jump": Action("Jump", (phase("jump_anticipate"), phase("jump"), phase("land"))),
     "hard_land": Action("Hard Land", (phase("hard_land"), phase("land", (1, 2)))),
     "flourish": Action("Flourish", (phase("flourish"),), fps=12),
