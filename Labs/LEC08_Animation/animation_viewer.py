@@ -402,9 +402,10 @@ class Player:
     completed_repeats: int = 0
     mode: str = 'PLAYING'
     cycles: int = 0
+    timeline: float = 0.0
 
 
-def advance(player, dt):
+def advance(player, dt, emit=None):
     """Consume elapsed time, carrying overshoot across every frame boundary."""
     if not math.isfinite(dt) or dt < 0:
         raise ValueError("dt must be finite and nonnegative")
@@ -414,7 +415,9 @@ def advance(player, dt):
         remaining = duration - player.elapsed
         if dt < remaining - 1e-10:
             player.elapsed += dt
+            player.timeline += dt
             break
+        player.timeline += remaining
         dt = max(0.0, dt - remaining)
         player.elapsed = 0.0
         if player.mode == 'PAUSING':
@@ -424,14 +427,27 @@ def advance(player, dt):
             player.mode = 'PLAYING'
             player.frame_index = 0
             player.completed_repeats = 0
+            if emit:
+                emit('start', player)
         elif player.frame_index + 1 < len(action.frames):
             player.frame_index += 1
         else:
             player.completed_repeats += 1
+            if emit:
+                emit('repeat', player)
             if player.completed_repeats == REPEAT_COUNT:
                 player.mode = 'PAUSING'
+                if emit:
+                    emit('pause', player)
             else:
                 player.frame_index = 0
+
+
+def trace_event(event, player):
+    print(f"{player.timeline:10.6f} {event:6s} "
+          f"action={ACTION_ORDER[player.action_index]} "
+          f"repeat={player.completed_repeats} frame={player.frame_index} "
+          f"cycle={player.cycles}", flush=True)
 
 
 def action_layout(action):
@@ -483,6 +499,8 @@ def draw_source(sheet, rect, scale=1.8):
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--trace", action="store_true",
+                        help="Log action starts, completed repeats and pauses")
     parser.add_argument("--cycles", type=int,
                         help="Exit after complete cycles (default: repeat forever)")
     parser.add_argument("--inspect", choices=ACTION_ORDER,
@@ -533,6 +551,9 @@ def main(argv=None):
         print(f"Loaded original: {sheet.w} x {sheet.h}", flush=True)
         start = previous = perf_counter()
         player = Player()
+        emit = trace_event if args.trace else None
+        if emit and not args.inspect and args.source_top is None:
+            emit('start', player)
         running = True
         while running:
             for event in p.get_events():
@@ -557,7 +578,7 @@ def main(argv=None):
                 break
             now = perf_counter()
             if not args.inspect and args.source_top is None:
-                advance(player, now - previous)
+                advance(player, now - previous, emit)
                 action_id = ACTION_ORDER[player.action_index]
                 frame_index = player.frame_index
                 if args.cycles is not None and player.cycles >= args.cycles:
