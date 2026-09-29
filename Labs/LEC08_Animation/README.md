@@ -20,18 +20,18 @@ python -B Labs/LEC08_Animation/animation_viewer.py
 
 기본 동작은 아래 순서의 **무한 순환**입니다. 액션의 준비·실행·회복 전체를 **5회** 재생하고,
 **마지막 프레임에서 1초** 정지한 다음 다음 액션으로 넘어갑니다. ESC 또는 창 닫기로 종료합니다.
-정지 중에도 이벤트를 처리합니다.
+정지 중에도 이벤트를 처리합니다. **I 키**로 현재 장면을 멈추고 검수 모드에 들어가며,
+다시 **I 키**를 누르면 검수 진입 전의 재생 위치와 반복·정지 상태에서 이어 재생합니다.
 
 ## 검수와 자가검증
 
 ```powershell
 python -B Labs/LEC08_Animation/animation_viewer.py --self-test
-python -B Labs/LEC08_Animation/animation_viewer.py --inspect counter_attack --frame 4
 python -B Labs/LEC08_Animation/animation_viewer.py --trace --cycles 2
 ```
 
-- `--self-test`: 창 없이 표준 라이브러리만으로 13개 테스트를 실행합니다. Pico2d가 없어도 사용할 수 있습니다.
-- `--inspect ID --frame N`: 0부터 시작하는 프레임 번호로 원본을 정지 표시합니다. 좌/우는 프레임, 위/아래는 액션 이동입니다. 콘솔에는 원본 사각형과 기준점이 표시됩니다.
+- `--self-test`: 창 없이 표준 라이브러리만으로 14개 테스트를 실행합니다. Pico2d가 없어도 사용할 수 있습니다.
+- **I 키**: 자동 재생 ↔ 검수 모드 전환. 검수 중 좌/우는 프레임, 위/아래는 액션 이동입니다. 콘솔에는 원본 사각형과 기준점이 표시됩니다. 창에 `INSPECT` 표시와 해당 모드의 조작 안내가 나타납니다. 기존 `--inspect`·`--frame` 명령줄 옵션은 제거했습니다.
 - `--trace`: 액션 시작, 반복 완료, 정지 시작의 누적 재생 시간을 출력합니다. 화면 갱신마다 출력하지 않습니다.
 - `--cycles N`: 실제 재생 검수를 위해 N사이클 후 종료합니다. 생략하면 무한 반복합니다.
 - `--seconds N`: 렌더링 스모크 검수를 위해 N초 후 종료합니다.

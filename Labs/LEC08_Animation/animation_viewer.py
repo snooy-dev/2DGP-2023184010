@@ -697,6 +697,58 @@ def self_test():
                     main([])
             renderer.close_canvas.assert_called_once()
 
+        def test_i_toggles_inspection_and_resumes_frozen_playback(self):
+            import contextlib
+            import io
+            from types import SimpleNamespace
+            from unittest.mock import Mock, patch
+
+            for paused in (False, True):
+                with self.subTest(paused=paused):
+                    sheet = SimpleNamespace(w=SOURCE_SIZE[0], h=SOURCE_SIZE[1], clip_draw=Mock())
+                    font = SimpleNamespace(draw=Mock())
+                    def key(value):
+                        return SimpleNamespace(type=2, key=value)
+                    renderer = SimpleNamespace(
+                        open_canvas=Mock(), close_canvas=Mock(), hide_lattice=Mock(),
+                        load_image=Mock(return_value=sheet),
+                        clear_canvas=Mock(), update_canvas=Mock(), delay=Mock(),
+                        SDL_QUIT=1, SDL_KEYDOWN=2, SDLK_ESCAPE=27, SDLK_i=105,
+                        SDLK_RIGHT=10, SDLK_LEFT=11, SDLK_DOWN=12, SDLK_UP=13,
+                        get_events=Mock(side_effect=[[], [key(105)], [key(10)], [key(12)],
+                                                    [key(11)], [key(13)], [key(11)],
+                                                    [key(105)], [], [SimpleNamespace(type=1)]]),
+                    )
+                    action = ACTIONS[ACTION_ORDER[0]]
+                    dt = REPEAT_COUNT * sum(action.durations) + 0.2 if paused else 0.01
+                    clock = Mock(side_effect=[100, 100 + dt]
+                                 + [100 + dt + 10 * n for n in range(1, 8)]
+                                 + [100 + dt + 70.02])
+                    update = Mock(wraps=advance)
+                    with patch.dict('sys.modules', pico2d=renderer), \
+                         patch.dict(main.__globals__, perf_counter=clock, advance=update,
+                                    load_hud_font=lambda p: font), \
+                         contextlib.redirect_stdout(io.StringIO()):
+                        main([])
+                    first = len(action.frames) - 1 if paused else 0
+                    other = ACTIONS[ACTION_ORDER[1]]
+                    expected = [action.frames[first], action.frames[first],
+                                action.frames[(first + 1) % len(action.frames)],
+                                other.frames[0], other.frames[-1], action.frames[0],
+                                action.frames[-1], action.frames[first], action.frames[first]]
+                    actual = [(c.args[0], SOURCE_SIZE[1] - c.args[1] - c.args[3],
+                               c.args[2], c.args[3]) for c in sheet.clip_draw.call_args_list]
+                    self.assertEqual(actual, [FRAME_RECTS[k].rect for k in expected])
+                    self.assertEqual(update.call_count, 2)
+                    player = update.call_args.args[0]
+                    self.assertAlmostEqual(player.timeline, dt + 0.02)
+                    self.assertEqual(player.completed_repeats, 5 if paused else 0)
+                    self.assertEqual(player.mode, 'PAUSING' if paused else 'PLAYING')
+                    self.assertAlmostEqual(player.elapsed, 0.22 if paused else 0.03)
+                    self.assertTrue(any(c.args[2] == 'INSPECT' for c in font.draw.call_args_list))
+                    renderer.load_image.assert_called_once_with(str(SOURCE_PATH))
+                    renderer.close_canvas.assert_called_once()
+
         def test_invalid_metadata_is_reported_before_frame_access(self):
             import contextlib
             import io
@@ -743,10 +795,6 @@ def main(argv=None):
                         help="Log action starts, completed repeats and pauses")
     parser.add_argument("--cycles", type=int,
                         help="Exit after complete cycles (default: repeat forever)")
-    parser.add_argument("--inspect", choices=ACTION_ORDER,
-                        help="Freeze an action and inspect its original frame")
-    parser.add_argument("--frame", type=int, default=None,
-                        help="Zero-based frame for --inspect")
     parser.add_argument("--source-top", type=int,
                         help="Inspect an unmodified canvas-sized region of the source sheet")
     parser.add_argument("--seconds", type=float,
@@ -754,25 +802,20 @@ def main(argv=None):
     args = parser.parse_args(argv)
     if args.self_test:
         return self_test()
-    if args.cycles is not None and (args.cycles <= 0 or args.inspect or args.source_top is not None):
+    if args.cycles is not None and (args.cycles <= 0 or args.source_top is not None):
         parser.error("--cycles requires normal playback and a positive count")
     if args.seconds is not None and (not math.isfinite(args.seconds) or args.seconds <= 0):
         parser.error("--seconds must be finite and positive")
     if args.source_top is not None and not 0 <= args.source_top < SOURCE_SIZE[1]:
         parser.error("--source-top is outside the sheet")
-    if args.inspect and args.source_top is not None:
-        parser.error('--inspect and --source-top cannot be combined')
-    if args.frame is not None and not args.inspect:
-        parser.error("--frame requires --inspect")
     try:
         validate_data()
         verify_source()
     except (OSError, ValueError) as exc:
         parser.exit(1, f'Cannot start Hornet viewer: {exc}\n')
-    action_id = args.inspect or ACTION_ORDER[0]
-    frame_index = args.frame if args.frame is not None else 0
-    if not 0 <= frame_index < len(ACTIONS[action_id].frames):
-        parser.error("--frame is outside the selected action")
+    action_id = ACTION_ORDER[0]
+    frame_index = 0
+    inspecting = False
     def report():
         frame_id = ACTIONS[action_id].frames[frame_index]
         frame = FRAME_RECTS[frame_id]
@@ -797,21 +840,27 @@ def main(argv=None):
         start = previous = perf_counter()
         player = Player()
         emit = trace_event if args.trace else None
-        if emit and not args.inspect and args.source_top is None:
+        if emit and args.source_top is None:
             emit('start', player)
         running = True
         while running:
+            mode_changed = False
             for event in p.get_events():
                 if event.type == p.SDL_QUIT or (
                     event.type == p.SDL_KEYDOWN and event.key == p.SDLK_ESCAPE
                 ):
                     running = False
-                elif args.inspect and event.type == p.SDL_KEYDOWN:
-                    if event.key in (p.SDLK_RIGHT, p.SDLK_LEFT):
+                elif event.type == p.SDL_KEYDOWN and args.source_top is None:
+                    if event.key == p.SDLK_i:
+                        inspecting = not inspecting
+                        mode_changed = True
+                        if inspecting:
+                            report()
+                    elif inspecting and event.key in (p.SDLK_RIGHT, p.SDLK_LEFT):
                         step = 1 if event.key == p.SDLK_RIGHT else -1
                         frame_index = (frame_index + step) % len(ACTIONS[action_id].frames)
                         report()
-                    elif event.key in (p.SDLK_UP, p.SDLK_DOWN):
+                    elif inspecting and event.key in (p.SDLK_UP, p.SDLK_DOWN):
                         step = 1 if event.key == p.SDLK_DOWN else -1
                         action_id = ACTION_ORDER[(ACTION_ORDER.index(action_id) + step)
                                                  % len(ACTION_ORDER)]
@@ -822,8 +871,11 @@ def main(argv=None):
             if args.seconds is not None and perf_counter() - start >= args.seconds:
                 break
             now = perf_counter()
-            if not args.inspect and args.source_top is None:
-                advance(player, now - previous, emit)
+            if not inspecting and args.source_top is None:
+                # Inspection freezes Player, including a partly elapsed hold.
+                # Do not charge time spent inspecting when I resumes playback.
+                if not mode_changed:
+                    advance(player, now - previous, emit)
                 action_id = ACTION_ORDER[player.action_index]
                 frame_index = player.frame_index
                 if args.cycles is not None and player.cycles >= args.cycles:
@@ -837,11 +889,15 @@ def main(argv=None):
                     font.draw(36, CANVAS_HEIGHT - 32,
                               f'HORNET  /  {ACTIONS[action_id].label}  /  '
                               f'Frame {frame_index + 1}/{len(ACTIONS[action_id].frames)}')
-                    if not args.inspect:
+                    if not inspecting:
                         status = 'HOLD 1.0s' if player.mode == 'PAUSING' else 'PLAYING'
                         font.draw(830, CANVAS_HEIGHT - 32,
                                   f'{status}  Done {player.completed_repeats}/{REPEAT_COUNT}')
-                    font.draw(36, 30, 'ESC: close    Inspect: Left/Right = frame, Up/Down = action')
+                    else:
+                        font.draw(830, CANVAS_HEIGHT - 32, 'INSPECT')
+                    help_text = ('I: resume    Left/Right: frame    Up/Down: action'
+                                 if inspecting else 'I: inspect')
+                    font.draw(36, 30, f'ESC: close    {help_text}')
             else:
                 height = min(CANVAS_HEIGHT, sheet.h - args.source_top)
                 draw_source(sheet, (0, args.source_top, CANVAS_WIDTH, height), 1)
