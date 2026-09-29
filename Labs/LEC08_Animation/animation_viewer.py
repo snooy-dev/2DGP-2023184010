@@ -8,6 +8,7 @@ from functools import cached_property
 from pathlib import Path
 import math
 from time import perf_counter
+import pico2d as p
 
 ROOT = Path(__file__).resolve().parent
 SOURCE_PATH = ROOT / "hornet_sheet.png"
@@ -464,7 +465,7 @@ def main(argv=None):
               f"{frame_id}: rect={frame.rect} pivot=({frame.pivot_x}, {frame.pivot_y})",
               flush=True)
     report()
-    import pico2d as p
+    
     layouts = {key: action_layout(action) for key, action in ACTIONS.items()}
     p.open_canvas(CANVAS_WIDTH, CANVAS_HEIGHT)
     try:
