@@ -6,6 +6,8 @@ import argparse
 from dataclasses import dataclass
 from pathlib import Path
 import math
+import hashlib
+import struct
 from time import perf_counter
 
 ROOT = Path(__file__).resolve().parent
@@ -350,6 +352,48 @@ ACTION_ORDER = (
 )
 
 
+def validate_data(frames=FRAME_RECTS, actions=ACTIONS, order=ACTION_ORDER):
+    if not order or len(order) != len(set(order)) or set(order) != set(actions):
+        raise ValueError("Action order must contain every action exactly once")
+    for frame_id, frame in frames.items():
+        if len(frame.rect) != 4 or any(type(v) is not int for v in frame.rect):
+            raise ValueError(f"{frame_id}: rectangle must contain four integers")
+        x, y, w, h = frame.rect
+        if x < 0 or y < 0 or w <= 0 or h <= 0 or x + w > SOURCE_SIZE[0] or y + h > SOURCE_SIZE[1]:
+            raise ValueError(f"{frame_id}: rectangle outside original sheet")
+        if not all(math.isfinite(v) for v in (frame.pivot_x, frame.pivot_y)):
+            raise ValueError(f"{frame_id}: invalid pivot")
+    used = set()
+    for action_id, action in actions.items():
+        if not action.phases or any(not ids for _, ids in action.phases):
+            raise ValueError(f"{action_id}: empty action or phase")
+        if not math.isfinite(action.fps) or action.fps <= 0:
+            raise ValueError(f"{action_id}: FPS must be finite and positive")
+        for frame_id in action.frames:
+            if frame_id not in frames:
+                raise ValueError(f"{action_id}: missing source frame {frame_id}")
+            used.add(frame_id)
+        indexes = set()
+        for index, duration in action.duration_overrides:
+            if type(index) is not int or not 0 <= index < len(action.frames) or index in indexes:
+                raise ValueError(f"{action_id}: invalid duration override index")
+            if not math.isfinite(duration) or duration <= 0:
+                raise ValueError(f"{action_id}: invalid duration")
+            indexes.add(index)
+    if used != set(frames):
+        raise ValueError("Unreferenced source rectangles in frame table")
+
+
+def verify_source(path=SOURCE_PATH):
+    data = path.read_bytes()
+    if len(data) < 24 or data[:8] != b"\x89PNG\r\n\x1a\n":
+        raise ValueError(f"Not a PNG: {path}")
+    if struct.unpack(">II", data[16:24]) != SOURCE_SIZE:
+        raise ValueError(f"Wrong original dimensions: {path}")
+    if hashlib.sha256(data).hexdigest() != SOURCE_SHA256:
+        raise ValueError(f"Original PNG hash changed: {path}")
+
+
 @dataclass
 class Player:
     action_index: int = 0
@@ -443,23 +487,25 @@ def main(argv=None):
                         help="Exit after complete cycles (default: repeat forever)")
     parser.add_argument("--inspect", choices=ACTION_ORDER,
                         help="Freeze an action and inspect its original frame")
-    parser.add_argument("--frame", type=int, default=0,
+    parser.add_argument("--frame", type=int, default=None,
                         help="Zero-based frame for --inspect")
     parser.add_argument("--source-top", type=int,
-                        help="Inspect an unmodified 960x720 region of the source sheet")
+                        help="Inspect an unmodified canvas-sized region of the source sheet")
     parser.add_argument("--seconds", type=float,
                         help="Close after this many seconds (rendering smoke checks)")
     args = parser.parse_args(argv)
     if args.cycles is not None and (args.cycles <= 0 or args.inspect or args.source_top is not None):
         parser.error("--cycles requires normal playback and a positive count")
-    if args.seconds is not None and args.seconds <= 0:
-        parser.error("--seconds must be positive")
+    if args.seconds is not None and (not math.isfinite(args.seconds) or args.seconds <= 0):
+        parser.error("--seconds must be finite and positive")
     if args.source_top is not None and not 0 <= args.source_top < SOURCE_SIZE[1]:
         parser.error("--source-top is outside the sheet")
-    if args.frame and not args.inspect:
+    if args.inspect and args.source_top is not None:
+        parser.error('--inspect and --source-top cannot be combined')
+    if args.frame is not None and not args.inspect:
         parser.error("--frame requires --inspect")
     action_id = args.inspect or ACTION_ORDER[0]
-    frame_index = args.frame
+    frame_index = args.frame if args.frame is not None else 0
     if not 0 <= frame_index < len(ACTIONS[action_id].frames):
         parser.error("--frame is outside the selected action")
     def report():
@@ -469,7 +515,12 @@ def main(argv=None):
               f"{frame_id}: rect={frame.rect} pivot=({frame.pivot_x}, {frame.pivot_y})",
               flush=True)
     report()
-    import pico2d as p
+    try:
+        validate_data()
+        verify_source()
+        import pico2d as p
+    except (OSError, ValueError, ImportError) as exc:
+        parser.exit(1, f'Cannot start Hornet viewer: {exc}\nInstall renderer: python -m pip install pico2d\n')
     opened = False
     try:
         p.open_canvas(CANVAS_WIDTH, CANVAS_HEIGHT)
