@@ -6,14 +6,12 @@ import argparse
 from dataclasses import dataclass
 from pathlib import Path
 import math
-import hashlib
 import struct
 from time import perf_counter
 
 ROOT = Path(__file__).resolve().parent
 SOURCE_PATH = ROOT / "assets" / "source" / "hornet_original.png"
 SOURCE_SIZE = (2393, 13086)
-SOURCE_SHA256 = "0bcedf01ef61f1b2482cd76afed1f76435aa43f899b0e87242c283322997b02f"
 CANVAS_WIDTH, CANVAS_HEIGHT = 1280, 720
 MARGIN_X, MARGIN_Y = 36, 64
 PREFERRED_SCALE = 2.0
@@ -385,13 +383,12 @@ def validate_data(frames=FRAME_RECTS, actions=ACTIONS, order=ACTION_ORDER):
 
 
 def verify_source(path=SOURCE_PATH):
-    data = path.read_bytes()
+    with path.open('rb') as source:
+        data = source.read(24)
     if len(data) < 24 or data[:8] != b"\x89PNG\r\n\x1a\n":
         raise ValueError(f"Not a PNG: {path}")
     if struct.unpack(">II", data[16:24]) != SOURCE_SIZE:
         raise ValueError(f"Wrong original dimensions: {path}")
-    if hashlib.sha256(data).hexdigest() != SOURCE_SHA256:
-        raise ValueError(f"Original PNG hash changed: {path}")
 
 
 @dataclass

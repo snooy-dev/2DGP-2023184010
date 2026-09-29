@@ -17,6 +17,10 @@
 
 ## 제출 범위
 
+후속 사용자 요청에 따라 원본 SHA-256 검사와 관련 상수·라이브러리를 제거했다.
+일반 실행과 자가검증 모두 해시를 계산하지 않는다. PNG 형식·크기는 헤더 24바이트로 확인한다.
+아래 원본 해시와 최초 테스트 설명은 당시 검증 기록이며 현재 실행 조건이 아니다.
+
 새 구현 소스는 [animation_viewer.py](../animation_viewer.py) 하나입니다.
 추가 스프라이트는 원본 `assets/source/hornet_original.png` 한 장뿐입니다.
 기존 수업 Python/PNG, 다른 Labs, Slides 파일은 변경하지 않았습니다.
