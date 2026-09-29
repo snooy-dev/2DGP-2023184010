@@ -4,14 +4,13 @@ Run with Python and pico2d. All frame data and viewer code live in this file.
 """
 import argparse
 from dataclasses import dataclass
+from functools import cached_property
 from pathlib import Path
 import math
-import struct
 from time import perf_counter
 
 ROOT = Path(__file__).resolve().parent
 SOURCE_PATH = ROOT / "assets" / "source" / "hornet_original.png"
-SOURCE_SIZE = (2393, 13086)
 CANVAS_WIDTH, CANVAS_HEIGHT = 1280, 720
 MARGIN_X, MARGIN_Y = 36, 64
 PREFERRED_SCALE = 2.0
@@ -22,7 +21,6 @@ PAUSE_SECONDS = 1.0
 @dataclass(frozen=True)
 class Frame:
     """One source rectangle and its local anchor; no new image is created."""
-    source_label: str
     rect: tuple[int, int, int, int]
     pivot_x: float
     pivot_y: float
@@ -35,11 +33,11 @@ class Action:
     fps: float = 12.0
     duration_overrides: tuple[tuple[int, float], ...] = ()
 
-    @property
+    @cached_property
     def frames(self):
         return tuple(frame_id for _, frames in self.phases for frame_id in frames)
 
-    @property
+    @cached_property
     def durations(self):
         overrides = dict(self.duration_overrides)
         return tuple(overrides.get(i, 1 / self.fps) for i in range(len(self.frames)))
@@ -312,7 +310,7 @@ SOURCE_FRAMES = {
     ),
 }
 FRAME_RECTS = {
-    f"{phase}:{i}": Frame(phase, values[:4], *values[4:])
+    f"{phase}:{i}": Frame(values[:4], *values[4:])
     for phase, frames in SOURCE_FRAMES.items()
     for i, values in enumerate(frames)
 }
@@ -350,47 +348,6 @@ ACTION_ORDER = (
 )
 
 
-def validate_data(frames=FRAME_RECTS, actions=ACTIONS, order=ACTION_ORDER):
-    if not order or len(order) != len(set(order)) or set(order) != set(actions):
-        raise ValueError("Action order must contain every action exactly once")
-    for frame_id, frame in frames.items():
-        if len(frame.rect) != 4 or any(type(v) is not int for v in frame.rect):
-            raise ValueError(f"{frame_id}: rectangle must contain four integers")
-        x, y, w, h = frame.rect
-        if x < 0 or y < 0 or w <= 0 or h <= 0 or x + w > SOURCE_SIZE[0] or y + h > SOURCE_SIZE[1]:
-            raise ValueError(f"{frame_id}: rectangle outside original sheet")
-        if not all(math.isfinite(v) for v in (frame.pivot_x, frame.pivot_y)):
-            raise ValueError(f"{frame_id}: invalid pivot")
-    used = set()
-    for action_id, action in actions.items():
-        if not action.phases or any(not ids for _, ids in action.phases):
-            raise ValueError(f"{action_id}: empty action or phase")
-        if not math.isfinite(action.fps) or action.fps <= 0:
-            raise ValueError(f"{action_id}: FPS must be finite and positive")
-        for frame_id in action.frames:
-            if frame_id not in frames:
-                raise ValueError(f"{action_id}: missing source frame {frame_id}")
-            used.add(frame_id)
-        indexes = set()
-        for index, duration in action.duration_overrides:
-            if type(index) is not int or not 0 <= index < len(action.frames) or index in indexes:
-                raise ValueError(f"{action_id}: invalid duration override index")
-            if not math.isfinite(duration) or duration <= 0:
-                raise ValueError(f"{action_id}: invalid duration")
-            indexes.add(index)
-    if used != set(frames):
-        raise ValueError("Unreferenced source rectangles in frame table")
-
-
-def verify_source(path=SOURCE_PATH):
-    with path.open('rb') as source:
-        data = source.read(24)
-    if len(data) < 24 or data[:8] != b"\x89PNG\r\n\x1a\n":
-        raise ValueError(f"Not a PNG: {path}")
-    if struct.unpack(">II", data[16:24]) != SOURCE_SIZE:
-        raise ValueError(f"Wrong original dimensions: {path}")
-
-
 @dataclass
 class Player:
     action_index: int = 0
@@ -404,8 +361,6 @@ class Player:
 
 def advance(player, dt, emit=None):
     """Consume elapsed time, carrying overshoot across every frame boundary."""
-    if not math.isfinite(dt) or dt < 0:
-        raise ValueError("dt must be finite and nonnegative")
     while dt > 0:
         action = ACTIONS[ACTION_ORDER[player.action_index]]
         duration = PAUSE_SECONDS if player.mode == 'PAUSING' else action.durations[player.frame_index]
@@ -486,40 +441,19 @@ def draw_frame(sheet, frame, anchor_x, anchor_y, scale):
                     draw_x, draw_y, width * scale, height * scale)
 
 
-def draw_source(sheet, rect, scale=1.8):
-    """Convert a top-origin source rectangle to Pico2d's bottom origin."""
-    left, top, width, height = rect
-    sheet.clip_draw(left, sheet.h - top - height, width, height,
-                    CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2,
-                    width * scale, height * scale)
-
-
-
-
-
-
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--trace", action="store_true",
                         help="Log action starts, completed repeats and pauses")
     parser.add_argument("--cycles", type=int,
                         help="Exit after complete cycles (default: repeat forever)")
-    parser.add_argument("--source-top", type=int,
-                        help="Inspect an unmodified canvas-sized region of the source sheet")
     parser.add_argument("--seconds", type=float,
                         help="Close after this many seconds (rendering smoke checks)")
     args = parser.parse_args(argv)
-    if args.cycles is not None and (args.cycles <= 0 or args.source_top is not None):
-        parser.error("--cycles requires normal playback and a positive count")
+    if args.cycles is not None and args.cycles <= 0:
+        parser.error("--cycles must be positive")
     if args.seconds is not None and (not math.isfinite(args.seconds) or args.seconds <= 0):
         parser.error("--seconds must be finite and positive")
-    if args.source_top is not None and not 0 <= args.source_top < SOURCE_SIZE[1]:
-        parser.error("--source-top is outside the sheet")
-    try:
-        validate_data()
-        verify_source()
-    except (OSError, ValueError) as exc:
-        parser.exit(1, f'Cannot start Hornet viewer: {exc}\n')
     action_id = ACTION_ORDER[0]
     frame_index = 0
     inspecting = False
@@ -530,24 +464,18 @@ def main(argv=None):
               f"{frame_id}: rect={frame.rect} pivot=({frame.pivot_x}, {frame.pivot_y})",
               flush=True)
     report()
+    import pico2d as p
+    layouts = {key: action_layout(action) for key, action in ACTIONS.items()}
+    p.open_canvas(CANVAS_WIDTH, CANVAS_HEIGHT)
     try:
-        import pico2d as p
-    except (OSError, ImportError) as exc:
-        parser.exit(1, f'Cannot start Hornet viewer: {exc}\nInstall renderer: python -m pip install pico2d\n')
-    opened = False
-    try:
-        p.open_canvas(CANVAS_WIDTH, CANVAS_HEIGHT)
-        opened = True
         p.hide_lattice()
         font = load_hud_font(p)
         sheet = p.load_image(str(SOURCE_PATH))
-        if (sheet.w, sheet.h) != SOURCE_SIZE:
-            raise ValueError("Unexpected original sheet dimensions")
         print(f"Loaded original: {sheet.w} x {sheet.h}", flush=True)
         start = previous = perf_counter()
         player = Player()
         emit = trace_event if args.trace else None
-        if emit and args.source_top is None:
+        if emit:
             emit('start', player)
         running = True
         while running:
@@ -557,7 +485,7 @@ def main(argv=None):
                     event.type == p.SDL_KEYDOWN and event.key == p.SDLK_ESCAPE
                 ):
                     running = False
-                elif event.type == p.SDL_KEYDOWN and args.source_top is None:
+                elif event.type == p.SDL_KEYDOWN:
                     if event.key == p.SDLK_i:
                         inspecting = not inspecting
                         mode_changed = True
@@ -578,7 +506,7 @@ def main(argv=None):
             if args.seconds is not None and perf_counter() - start >= args.seconds:
                 break
             now = perf_counter()
-            if not inspecting and args.source_top is None:
+            if not inspecting:
                 # Inspection freezes Player, including a partly elapsed hold.
                 # Do not charge time spent inspecting when I resumes playback.
                 if not mode_changed:
@@ -589,30 +517,25 @@ def main(argv=None):
                     break
             previous = now
             p.clear_canvas()
-            if args.source_top is None:
-                draw_frame(sheet, FRAME_RECTS[ACTIONS[action_id].frames[frame_index]],
-                           *action_layout(ACTIONS[action_id]))
-                if font:
-                    font.draw(36, CANVAS_HEIGHT - 32,
-                              f'HORNET  /  {ACTIONS[action_id].label}  /  '
-                              f'Frame {frame_index + 1}/{len(ACTIONS[action_id].frames)}')
-                    if not inspecting:
-                        status = 'HOLD 1.0s' if player.mode == 'PAUSING' else 'PLAYING'
-                        font.draw(830, CANVAS_HEIGHT - 32,
-                                  f'{status}  Done {player.completed_repeats}/{REPEAT_COUNT}')
-                    else:
-                        font.draw(830, CANVAS_HEIGHT - 32, 'INSPECT')
-                    help_text = ('I: resume    Left/Right: frame    Up/Down: action'
-                                 if inspecting else 'I: inspect')
-                    font.draw(36, 30, f'ESC: close    {help_text}')
-            else:
-                height = min(CANVAS_HEIGHT, sheet.h - args.source_top)
-                draw_source(sheet, (0, args.source_top, CANVAS_WIDTH, height), 1)
+            draw_frame(sheet, FRAME_RECTS[ACTIONS[action_id].frames[frame_index]],
+                       *layouts[action_id])
+            if font:
+                font.draw(36, CANVAS_HEIGHT - 32,
+                          f'HORNET  /  {ACTIONS[action_id].label}  /  '
+                          f'Frame {frame_index + 1}/{len(ACTIONS[action_id].frames)}')
+                if not inspecting:
+                    status = 'HOLD 1.0s' if player.mode == 'PAUSING' else 'PLAYING'
+                    font.draw(830, CANVAS_HEIGHT - 32,
+                              f'{status}  Done {player.completed_repeats}/{REPEAT_COUNT}')
+                else:
+                    font.draw(830, CANVAS_HEIGHT - 32, 'INSPECT')
+                help_text = ('I: resume    Left/Right: frame    Up/Down: action'
+                             if inspecting else 'I: inspect')
+                font.draw(36, 30, f'ESC: close    {help_text}')
             p.update_canvas()
             p.delay(0.01)
     finally:
-        if opened:
-            p.close_canvas()
+        p.close_canvas()
 
 
 if __name__ == "__main__":
