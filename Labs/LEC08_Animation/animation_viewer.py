@@ -43,6 +43,34 @@ class Action:
 # left, top, width, height, pivot_x, pivot_y; top-left source coordinates.
 # Measured from the unchanged sheet, including every nonzero-alpha pixel.
 SOURCE_FRAMES = {
+    "throw_recover": (
+        (11, 7500, 231, 137, 112, 137),
+        (259, 7504, 203, 132, 107, 133),
+        (489, 7505, 203, 131, 120, 132),
+        (732, 7505, 203, 131, 120, 132),
+        (975, 7505, 203, 131, 120, 132),
+        (1227, 7449, 184, 187, 111, 188),
+    ),
+    "throw": (
+        (25, 7240, 129, 185, 54, 186),
+        (158, 7291, 150, 135, 76, 135),
+        (324, 7298, 137, 127, 65, 128),
+        (468, 7294, 149, 131, 76, 132),
+        (634, 7294, 138, 131, 65, 132),
+        (789, 7294, 138, 131, 65, 132),
+    ),
+    "throw_anticipate": (
+        (3, 6790, 192, 210, 139, 210),
+        (325, 6800, 182, 200, 98, 200),
+        (607, 6787, 192, 211, 97, 213),
+        (907, 6804, 205, 194, 78, 196),
+        (1188, 6802, 205, 198, 78, 198),
+        (1469, 6802, 205, 198, 78, 198),
+        (1750, 6802, 205, 197, 78, 198),
+        (2031, 6802, 205, 198, 78, 198),
+        (64, 7019, 205, 197, 78, 198),
+        (360, 7026, 201, 189, 63, 191),
+    ),
     "sphere_recover": (
         (1372, 5635, 231, 174, 95.5, 210),
         (1607, 5648, 200, 197, 136.5, 197),
@@ -218,6 +246,7 @@ def phase(name, indexes=None):
 
 
 ACTIONS = {
+    "throw": Action("Throw", (phase("throw_anticipate"), phase("throw"), phase("throw_recover"))),
     "sphere_ground": Action("Sphere Ground", (phase("sphere_ground_anticipate"), phase("sphere"), phase("sphere_recover"))),
     "sphere_air": Action("Sphere Air", (phase("sphere_air_anticipate"), phase("sphere"), phase("sphere_recover"))),
     "air_dash": Action("Air Dash", (phase("air_dash_anticipate"), phase("air_dash"), phase("air_dash_recover"))),
