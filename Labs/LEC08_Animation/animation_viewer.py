@@ -43,6 +43,30 @@ class Action:
 # left, top, width, height, pivot_x, pivot_y; top-left source coordinates.
 # Measured from the unchanged sheet, including every nonzero-alpha pixel.
 SOURCE_FRAMES = {
+    "ground_dash_recover": (
+        (630, 2864, 200, 123, 66.5, 123),
+        (928, 2850, 203, 137, 62.5, 137),
+        (1224, 2850, 204, 137, 60.5, 137),
+        (1499, 2837, 205, 149, 79.5, 150),
+        (1740, 2799, 196, 187, 132.5, 188),
+        (2021, 2779, 192, 207, 145.5, 208),
+    ),
+    "ground_dash": (
+        (3, 2780, 254, 136, 127.5, 136),
+        (263, 2782, 251, 134, 125.5, 134),
+    ),
+    "ground_dash_anticipate": (
+        (3, 2369, 203, 189, 138, 192),
+        (315, 2401, 204, 156, 105, 160),
+        (631, 2426, 205, 135, 68, 135),
+        (903, 2421, 205, 137, 75, 140),
+        (1182, 2421, 205, 137, 75, 140),
+        (1461, 2421, 205, 137, 75, 140),
+        (1740, 2421, 205, 137, 75, 140),
+        (2019, 2421, 205, 137, 75, 140),
+        (66, 2617, 205, 137, 75, 140),
+        (348, 2626, 205, 128, 72, 131),
+    ),
     "evade": (
         (1155, 2130, 191, 210, 94, 210),
         (1350, 2130, 192, 205, 98, 210),
@@ -136,6 +160,7 @@ def phase(name, indexes=None):
 
 
 ACTIONS = {
+    "ground_dash": Action("Ground Dash", (phase("ground_dash_anticipate"), phase("ground_dash"), phase("ground_dash_recover"))),
     "wall_impact": Action("Wall Impact", (phase("wall_impact"),)),
     "evade": Action("Evade", (phase("evade_anticipate"), phase("evade"))),
     "jump": Action("Jump", (phase("jump_anticipate"), phase("jump"), phase("land"))),
