@@ -60,6 +60,7 @@ class Player:
     elapsed: float = 0.0
     completed_repeats: int = 0
     state: str = "PLAYING"
+    cycles: int = 0
 
 
 def start_action(player, action_index):
@@ -82,18 +83,18 @@ def next_frame(player):
 
 def advance(player, dt):
     player.elapsed += dt
-    while player.state != "FINISHED":
+    while True:
         interval = HOLD_SECONDS if player.state == "HOLDING" else 1 / ACTIONS[player.action_index].fps
         if player.elapsed < interval:
             return
         player.elapsed -= interval
         if player.state == "HOLDING":
-            if player.action_index + 1 < len(ACTIONS):
-                remaining = player.elapsed
-                start_action(player, player.action_index + 1)
-                player.elapsed = remaining
-            else:
-                player.state = "FINISHED"
+            next_index = (player.action_index + 1) % len(ACTIONS)
+            if next_index == 0:
+                player.cycles += 1
+            remaining = player.elapsed
+            start_action(player, next_index)
+            player.elapsed = remaining
         else:
             next_frame(player)
 
