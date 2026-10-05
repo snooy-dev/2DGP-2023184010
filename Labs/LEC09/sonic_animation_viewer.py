@@ -8,6 +8,7 @@ import pico2d as p
 
 CANVAS_WIDTH, CANVAS_HEIGHT = 800, 600
 PREFERRED_SCALE = 6
+MARGIN = 36
 SOURCE_PATH = Path(__file__).resolve().parent / "sonic-sprite.png"
 FPS = 12
 REPEAT_COUNT = 5
@@ -147,11 +148,23 @@ def advance(player, dt):
             next_frame(player)
 
 
-def draw_frame(sheet, frame):
+def action_layout(action):
+    left = max(f.pivot_x for f in action.frames)
+    right = max(f.width - f.pivot_x for f in action.frames)
+    top = max(f.pivot_y for f in action.frames)
+    bottom = max(f.height - f.pivot_y for f in action.frames)
+    scale = min(PREFERRED_SCALE,
+                (CANVAS_WIDTH - 2 * MARGIN) / (left + right),
+                (CANVAS_HEIGHT - 2 * MARGIN) / (top + bottom))
+    return ((CANVAS_WIDTH + (left - right) * scale) / 2,
+            (CANVAS_HEIGHT + (bottom - top) * scale) / 2, scale)
+
+
+def draw_frame(sheet, frame, layout):
     bottom = sheet.h - frame.top - frame.height
-    scale = PREFERRED_SCALE
-    x = CANVAS_WIDTH / 2 + (frame.width / 2 - frame.pivot_x) * scale
-    y = CANVAS_HEIGHT / 2 + (frame.pivot_y - frame.height / 2) * scale
+    anchor_x, anchor_y, scale = layout
+    x = anchor_x + (frame.width / 2 - frame.pivot_x) * scale
+    y = anchor_y + (frame.pivot_y - frame.height / 2) * scale
     sheet.clip_draw(frame.left, bottom, frame.width, frame.height,
                     x, y, frame.width * scale, frame.height * scale)
 
@@ -169,6 +182,7 @@ def main():
     p.open_canvas(CANVAS_WIDTH, CANVAS_HEIGHT)
     p.hide_lattice()
     sheet = p.load_image(str(SOURCE_PATH))
+    layouts = tuple(action_layout(action) for action in ACTIONS)
     player = Player()
     previous = perf_counter()
     while handle_events():
@@ -176,7 +190,8 @@ def main():
         advance(player, now - previous)
         previous = now
         p.clear_canvas()
-        draw_frame(sheet, ACTIONS[player.action_index].frames[player.frame_index])
+        draw_frame(sheet, ACTIONS[player.action_index].frames[player.frame_index],
+                   layouts[player.action_index])
         p.update_canvas()
         p.delay(0.01)
     p.close_canvas()
