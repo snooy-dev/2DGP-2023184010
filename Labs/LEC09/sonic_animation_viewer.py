@@ -1,6 +1,7 @@
 """Classic Sonic animation viewer (Python + pico2d)."""
 
 from dataclasses import dataclass
+from math import isfinite
 from pathlib import Path
 from time import perf_counter
 
@@ -13,6 +14,7 @@ SOURCE_PATH = Path(__file__).resolve().parent / "sonic-sprite.png"
 FPS = 12
 REPEAT_COUNT = 5
 HOLD_SECONDS = 1.0
+TIME_EPSILON = 1e-10
 
 # Source catalog: top-left coordinates, 76 Sonic poses in 14 action groups.
 # Names describe visible poses; the original sheet has no action labels.
@@ -110,6 +112,7 @@ class Player:
     completed_repeats: int = 0
     state: str = "PLAYING"
     cycles: int = 0
+    timeline: float = 0.0
 
 
 def start_action(player, action_index):
@@ -120,23 +123,30 @@ def start_action(player, action_index):
     player.elapsed = 0.0
 
 
-def next_frame(player):
+def next_frame(player, emit=None):
     action = ACTIONS[player.action_index]
     if player.frame_index == len(action.frames) - 1:
         player.completed_repeats += 1
+        if emit:
+            emit("repeat", player)
         if player.completed_repeats == REPEAT_COUNT:
             player.state = "HOLDING"
+            if emit:
+                emit("hold", player)
             return
     player.frame_index = (player.frame_index + 1) % len(action.frames)
 
 
-def advance(player, dt):
+def advance(player, dt, emit=None):
+    if not isfinite(dt) or dt < 0:
+        raise ValueError("Elapsed time must be finite and nonnegative")
     player.elapsed += dt
     while True:
         interval = HOLD_SECONDS if player.state == "HOLDING" else 1 / ACTIONS[player.action_index].fps
-        if player.elapsed < interval:
+        if player.elapsed + TIME_EPSILON < interval:
             return
-        player.elapsed -= interval
+        player.elapsed = max(0.0, player.elapsed - interval)
+        player.timeline += interval
         if player.state == "HOLDING":
             next_index = (player.action_index + 1) % len(ACTIONS)
             if next_index == 0:
@@ -144,8 +154,10 @@ def advance(player, dt):
             remaining = player.elapsed
             start_action(player, next_index)
             player.elapsed = remaining
+            if emit:
+                emit("action", player)
         else:
-            next_frame(player)
+            next_frame(player, emit)
 
 
 def action_layout(action):
