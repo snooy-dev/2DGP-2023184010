@@ -3,9 +3,14 @@
 from dataclasses import dataclass
 from math import isfinite
 from pathlib import Path
+import sys
 from time import perf_counter
 
-import pico2d as p
+try:
+    import pico2d as p
+except ImportError:
+    print("pico2d is required. Install it with: python -m pip install pico2d", file=sys.stderr)
+    raise SystemExit(1)
 
 CANVAS_WIDTH, CANVAS_HEIGHT = 800, 600
 PREFERRED_SCALE = 6
@@ -190,24 +195,53 @@ def handle_events():
     return True
 
 
+def validate_actions(sheet):
+    if not ACTIONS:
+        raise ValueError("No animation actions registered")
+    for action in ACTIONS:
+        if not action.frames or not isfinite(action.fps) or action.fps <= 0:
+            raise ValueError(f"Invalid frames or FPS: {action.name}")
+        for frame in action.frames:
+            if (frame.width <= 0 or frame.height <= 0
+                    or frame.left < 0 or frame.top < 0
+                    or frame.left + frame.width > sheet.w
+                    or frame.top + frame.height > sheet.h
+                    or not isfinite(frame.pivot_x) or not isfinite(frame.pivot_y)):
+                raise ValueError(f"Invalid source frame: {action.name}: {frame}")
+
+
 def main():
-    p.open_canvas(CANVAS_WIDTH, CANVAS_HEIGHT)
-    p.hide_lattice()
-    sheet = p.load_image(str(SOURCE_PATH))
-    layouts = tuple(action_layout(action) for action in ACTIONS)
-    player = Player()
-    previous = perf_counter()
-    while handle_events():
-        now = perf_counter()
-        advance(player, now - previous)
-        previous = now
-        p.clear_canvas()
-        draw_frame(sheet, ACTIONS[player.action_index].frames[player.frame_index],
-                   layouts[player.action_index])
-        p.update_canvas()
-        p.delay(0.01)
-    p.close_canvas()
+    if not SOURCE_PATH.is_file():
+        print(f"Sprite image not found: {SOURCE_PATH}. Place sonic-sprite.png beside this script.", file=sys.stderr)
+        return 1
+    opened = False
+    try:
+        p.open_canvas(CANVAS_WIDTH, CANVAS_HEIGHT)
+        opened = True
+        p.hide_lattice()
+        sheet = p.load_image(str(SOURCE_PATH))
+        validate_actions(sheet)
+        layouts = tuple(action_layout(action) for action in ACTIONS)
+        player = Player()
+        previous = perf_counter()
+        while handle_events():
+            now = perf_counter()
+            advance(player, now - previous)
+            previous = now
+            p.clear_canvas()
+            draw_frame(sheet, ACTIONS[player.action_index].frames[player.frame_index],
+                       layouts[player.action_index])
+            p.update_canvas()
+            p.delay(0.01)
+    except (OSError, ValueError) as error:
+        print(f"Cannot start viewer with {SOURCE_PATH}: {error or 'image load failed'}. "
+              "Check the PNG file and animation data.", file=sys.stderr)
+        return 1
+    finally:
+        if opened:
+            p.close_canvas()
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())
