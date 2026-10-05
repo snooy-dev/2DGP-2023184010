@@ -10,6 +10,7 @@ CANVAS_WIDTH, CANVAS_HEIGHT = 800, 600
 PREFERRED_SCALE = 6
 SOURCE_PATH = Path(__file__).resolve().parent / "sonic-sprite.png"
 FPS = 12
+REPEAT_COUNT = 5
 
 # Source catalog: top-left coordinates, 76 Sonic poses in 14 action groups.
 # Names describe visible poses; the original sheet has no action labels.
@@ -56,18 +57,22 @@ class Player:
     frame_index: int = 0
     elapsed: float = 0.0
     completed_repeats: int = 0
+    state: str = "PLAYING"
 
 
 def next_frame(player):
     if player.frame_index == len(ACTIONS[0].frames) - 1:
         player.completed_repeats += 1
+        if player.completed_repeats == REPEAT_COUNT:
+            player.state = "FINISHED"
+            return
     player.frame_index = (player.frame_index + 1) % len(ACTIONS[0].frames)
 
 
 def advance(player, dt):
     player.elapsed += dt
     interval = 1 / ACTIONS[0].fps
-    while player.elapsed >= interval:
+    while player.state == "PLAYING" and player.elapsed >= interval:
         player.elapsed -= interval
         next_frame(player)
 
