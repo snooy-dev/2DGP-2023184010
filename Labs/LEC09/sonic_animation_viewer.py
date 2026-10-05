@@ -38,7 +38,16 @@ class Action:
     fps: float = FPS
 
 
-ACTIONS = (Action("idle", (Frame(1, 39, 29, 39, 14.5, 39),)),)
+def make_frames(rectangles):
+    return tuple(Frame(left, top, width, height, width / 2, height)
+                 for left, top, width, height in rectangles)
+
+
+ACTIONS = (Action("idle", make_frames((
+    (1, 39, 29, 39), (31, 40, 26, 38), (58, 39, 30, 39),
+    (88, 40, 28, 38), (118, 40, 30, 38), (150, 40, 30, 38),
+    (182, 40, 30, 38), (212, 39, 29, 38), (241, 39, 28, 38),
+))),)
 
 
 def draw_frame(sheet, frame):
