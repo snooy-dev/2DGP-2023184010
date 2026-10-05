@@ -2,6 +2,7 @@
 
 from dataclasses import dataclass
 from pathlib import Path
+from time import perf_counter
 
 import pico2d as p
 
@@ -53,10 +54,19 @@ ACTIONS = (Action("idle", make_frames((
 @dataclass
 class Player:
     frame_index: int = 0
+    elapsed: float = 0.0
 
 
 def next_frame(player):
     player.frame_index = (player.frame_index + 1) % len(ACTIONS[0].frames)
+
+
+def advance(player, dt):
+    player.elapsed += dt
+    interval = 1 / ACTIONS[0].fps
+    while player.elapsed >= interval:
+        player.elapsed -= interval
+        next_frame(player)
 
 
 def draw_frame(sheet, frame):
@@ -80,12 +90,15 @@ def main():
     p.hide_lattice()
     sheet = p.load_image(str(SOURCE_PATH))
     player = Player()
+    previous = perf_counter()
     while handle_events():
+        now = perf_counter()
+        advance(player, now - previous)
+        previous = now
         p.clear_canvas()
         draw_frame(sheet, ACTIONS[0].frames[player.frame_index])
         p.update_canvas()
-        p.delay(1 / FPS)
-        next_frame(player)
+        p.delay(0.01)
     p.close_canvas()
 
 
