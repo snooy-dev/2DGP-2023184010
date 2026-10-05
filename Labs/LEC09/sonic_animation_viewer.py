@@ -50,11 +50,12 @@ ACTIONS = (Action("idle", make_frames((
     (1, 39, 29, 39), (31, 40, 26, 38), (58, 39, 30, 39),
     (88, 40, 28, 38), (118, 40, 30, 38), (150, 40, 30, 38),
     (182, 40, 30, 38), (212, 39, 29, 38), (241, 39, 28, 38),
-))),)
+))), Action("crouch", make_frames(((270, 45, 24, 32), (302, 51, 29, 26)))),)
 
 
 @dataclass
 class Player:
+    action_index: int = 0
     frame_index: int = 0
     elapsed: float = 0.0
     completed_repeats: int = 0
@@ -62,23 +63,30 @@ class Player:
 
 
 def next_frame(player):
-    if player.frame_index == len(ACTIONS[0].frames) - 1:
+    action = ACTIONS[player.action_index]
+    if player.frame_index == len(action.frames) - 1:
         player.completed_repeats += 1
         if player.completed_repeats == REPEAT_COUNT:
             player.state = "HOLDING"
             return
-    player.frame_index = (player.frame_index + 1) % len(ACTIONS[0].frames)
+    player.frame_index = (player.frame_index + 1) % len(action.frames)
 
 
 def advance(player, dt):
     player.elapsed += dt
     while player.state != "FINISHED":
-        interval = HOLD_SECONDS if player.state == "HOLDING" else 1 / ACTIONS[0].fps
+        interval = HOLD_SECONDS if player.state == "HOLDING" else 1 / ACTIONS[player.action_index].fps
         if player.elapsed < interval:
             return
         player.elapsed -= interval
         if player.state == "HOLDING":
-            player.state = "FINISHED"
+            if player.action_index + 1 < len(ACTIONS):
+                player.action_index += 1
+                player.frame_index = 0
+                player.completed_repeats = 0
+                player.state = "PLAYING"
+            else:
+                player.state = "FINISHED"
         else:
             next_frame(player)
 
@@ -110,7 +118,7 @@ def main():
         advance(player, now - previous)
         previous = now
         p.clear_canvas()
-        draw_frame(sheet, ACTIONS[0].frames[player.frame_index])
+        draw_frame(sheet, ACTIONS[player.action_index].frames[player.frame_index])
         p.update_canvas()
         p.delay(0.01)
     p.close_canvas()
