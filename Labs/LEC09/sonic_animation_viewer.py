@@ -41,9 +41,13 @@ class Action:
     fps: float = FPS
 
 
-def make_frames(rectangles):
-    return tuple(Frame(left, top, width, height, width / 2, height)
-                 for left, top, width, height in rectangles)
+def make_frames(rectangles, baseline=None, pivots=None):
+    # Preserve each pose's vertical offset within its original source row.
+    baseline = max(top + height for _, top, _, height in rectangles) if baseline is None else baseline
+    return tuple(Frame(left, top, width, height,
+                       pivots[i] if pivots is not None else width / 2,
+                       baseline - top)
+                 for i, (left, top, width, height) in enumerate(rectangles))
 
 
 ACTIONS = (
@@ -51,8 +55,8 @@ ACTIONS = (
         (1, 39, 29, 39), (31, 40, 26, 38), (58, 39, 30, 39),
         (88, 40, 28, 38), (118, 40, 30, 38), (150, 40, 30, 38),
         (182, 40, 30, 38), (212, 39, 29, 38), (241, 39, 28, 38),
-    ))),
-    Action("crouch", make_frames(((270, 45, 24, 32), (302, 51, 29, 26)))),
+    ), baseline=78, pivots=(15, 13, 14, 14, 16, 16, 16, 15, 14))),
+    Action("crouch", make_frames(((270, 45, 24, 32), (302, 51, 29, 26)), baseline=78)),
     Action("run", make_frames((
         (8, 80, 26, 37), (37, 80, 27, 37), (65, 80, 31, 38),
         (97, 80, 37, 37), (135, 80, 32, 35), (170, 79, 32, 38),
@@ -89,8 +93,8 @@ ACTIONS = (
     Action("hurt", make_frames(((184, 341, 40, 28), (232, 341, 39, 27)))),
     Action("turn_run", make_frames((
         (1, 379, 27, 38), (31, 379, 31, 36), (64, 379, 31, 36),
-        (99, 378, 33, 37), (136, 379, 32, 36), (176, 379, 33, 36),
-        (217, 379, 33, 36), (254, 377, 33, 37),
+        (99, 377, 33, 38), (136, 379, 32, 36), (176, 379, 33, 36),
+        (217, 379, 33, 36), (254, 378, 33, 36),
     ))),
     Action("surprised", make_frames(((6, 429, 34, 40), (49, 426, 34, 43)))),
     Action("look_down", make_frames(((96, 427, 23, 39), (125, 427, 23, 39)))),
@@ -145,9 +149,11 @@ def advance(player, dt):
 
 def draw_frame(sheet, frame):
     bottom = sheet.h - frame.top - frame.height
+    scale = PREFERRED_SCALE
+    x = CANVAS_WIDTH / 2 + (frame.width / 2 - frame.pivot_x) * scale
+    y = CANVAS_HEIGHT / 2 + (frame.pivot_y - frame.height / 2) * scale
     sheet.clip_draw(frame.left, bottom, frame.width, frame.height,
-                    CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2,
-                    frame.width * PREFERRED_SCALE, frame.height * PREFERRED_SCALE)
+                    x, y, frame.width * scale, frame.height * scale)
 
 
 def handle_events():
