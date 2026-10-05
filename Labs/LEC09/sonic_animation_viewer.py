@@ -55,9 +55,12 @@ ACTIONS = (Action("idle", make_frames((
 class Player:
     frame_index: int = 0
     elapsed: float = 0.0
+    completed_repeats: int = 0
 
 
 def next_frame(player):
+    if player.frame_index == len(ACTIONS[0].frames) - 1:
+        player.completed_repeats += 1
     player.frame_index = (player.frame_index + 1) % len(ACTIONS[0].frames)
 
 
