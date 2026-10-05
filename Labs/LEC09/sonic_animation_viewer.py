@@ -50,6 +50,15 @@ ACTIONS = (Action("idle", make_frames((
 ))),)
 
 
+@dataclass
+class Player:
+    frame_index: int = 0
+
+
+def next_frame(player):
+    player.frame_index = (player.frame_index + 1) % len(ACTIONS[0].frames)
+
+
 def draw_frame(sheet, frame):
     bottom = sheet.h - frame.top - frame.height
     sheet.clip_draw(frame.left, bottom, frame.width, frame.height,
@@ -70,11 +79,13 @@ def main():
     p.open_canvas(CANVAS_WIDTH, CANVAS_HEIGHT)
     p.hide_lattice()
     sheet = p.load_image(str(SOURCE_PATH))
+    player = Player()
     while handle_events():
         p.clear_canvas()
-        draw_frame(sheet, ACTIONS[0].frames[0])
+        draw_frame(sheet, ACTIONS[0].frames[player.frame_index])
         p.update_canvas()
-        p.delay(0.01)
+        p.delay(1 / FPS)
+        next_frame(player)
     p.close_canvas()
 
 
