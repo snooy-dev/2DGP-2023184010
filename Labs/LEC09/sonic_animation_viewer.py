@@ -1,5 +1,6 @@
 """Classic Sonic animation viewer (Python + pico2d)."""
 
+from dataclasses import dataclass
 from pathlib import Path
 
 import pico2d as p
@@ -7,7 +8,7 @@ import pico2d as p
 CANVAS_WIDTH, CANVAS_HEIGHT = 800, 600
 PREFERRED_SCALE = 6
 SOURCE_PATH = Path(__file__).resolve().parent / "sonic-sprite.png"
-FIRST_RECT = (0, 39, 30, 39)  # left, top, width, height
+FPS = 12
 
 # Source catalog: top-left coordinates, 76 Sonic poses in 14 action groups.
 # Names describe visible poses; the original sheet has no action labels.
@@ -20,12 +21,31 @@ FIRST_RECT = (0, 39, 30, 39)  # left, top, width, height
 # Split touching pixels in row 1 at x=88, 212, 241 rather than merging poses.
 
 
-def draw_frame(sheet):
-    left, top, width, height = FIRST_RECT
-    bottom = sheet.h - top - height
-    sheet.clip_draw(left, bottom, width, height,
+@dataclass(frozen=True)
+class Frame:
+    left: int
+    top: int
+    width: int
+    height: int
+    pivot_x: float
+    pivot_y: float
+
+
+@dataclass(frozen=True)
+class Action:
+    name: str
+    frames: tuple[Frame, ...]
+    fps: float = FPS
+
+
+ACTIONS = (Action("idle", (Frame(1, 39, 29, 39, 14.5, 39),)),)
+
+
+def draw_frame(sheet, frame):
+    bottom = sheet.h - frame.top - frame.height
+    sheet.clip_draw(frame.left, bottom, frame.width, frame.height,
                     CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2,
-                    width * PREFERRED_SCALE, height * PREFERRED_SCALE)
+                    frame.width * PREFERRED_SCALE, frame.height * PREFERRED_SCALE)
 
 
 def handle_events():
@@ -43,7 +63,7 @@ def main():
     sheet = p.load_image(str(SOURCE_PATH))
     while handle_events():
         p.clear_canvas()
-        draw_frame(sheet)
+        draw_frame(sheet, ACTIONS[0].frames[0])
         p.update_canvas()
         p.delay(0.01)
     p.close_canvas()
