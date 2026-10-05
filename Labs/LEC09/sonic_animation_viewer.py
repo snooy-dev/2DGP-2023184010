@@ -6,6 +6,14 @@ import pico2d as p
 
 CANVAS_WIDTH, CANVAS_HEIGHT = 800, 600
 SOURCE_PATH = Path(__file__).resolve().parent / "sonic-sprite.png"
+FIRST_RECT = (0, 39, 30, 39)  # left, top, width, height
+
+
+def draw_frame(sheet):
+    left, top, width, height = FIRST_RECT
+    bottom = sheet.h - top - height
+    sheet.clip_draw(left, bottom, width, height,
+                    CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2)
 
 
 def handle_events():
@@ -22,7 +30,7 @@ def main():
     sheet = p.load_image(str(SOURCE_PATH))
     while handle_events():
         p.clear_canvas()
-        sheet.draw(CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2)
+        draw_frame(sheet)
         p.update_canvas()
         p.delay(0.01)
     p.close_canvas()
