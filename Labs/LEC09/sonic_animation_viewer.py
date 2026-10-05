@@ -30,7 +30,7 @@ TIME_EPSILON = 1e-10
 # y=283..317: dash_trail (6); y=326..370: turn (6), hurt (2).
 # y=377..416: turn_run (8); y=426..468: surprised (2), look_down (2).
 # Exclude title y=1..32, credits y>=472, and the two bonus static characters.
-# Split touching pixels in row 1 at x=88, 212, 241 rather than merging poses.
+# Split touching column projections at x=86, 211, 240 using connected pixels.
 
 
 @dataclass(frozen=True)
@@ -61,10 +61,10 @@ def make_frames(rectangles, baseline=None, pivots=None):
 
 ACTIONS = (
     Action("idle", make_frames((
-        (1, 39, 29, 39), (31, 40, 26, 38), (58, 39, 30, 39),
-        (88, 40, 28, 38), (118, 40, 30, 38), (150, 40, 30, 38),
-        (182, 40, 30, 38), (212, 39, 29, 38), (241, 39, 28, 38),
-    ), baseline=78, pivots=(15, 13, 14, 14, 16, 16, 16, 15, 14))),
+        (1, 39, 29, 39), (31, 40, 26, 38), (58, 39, 28, 39),
+        (86, 40, 30, 38), (118, 40, 30, 38), (150, 40, 30, 38),
+        (182, 40, 29, 38), (211, 39, 29, 38), (240, 39, 29, 38),
+    ), baseline=78, pivots=(15, 13, 14, 16, 16, 16, 16, 16, 15))),
     Action("crouch", make_frames(((270, 45, 24, 32), (302, 51, 29, 26)), baseline=78)),
     Action("run", make_frames((
         (8, 80, 26, 37), (37, 80, 27, 37), (65, 80, 31, 38),
