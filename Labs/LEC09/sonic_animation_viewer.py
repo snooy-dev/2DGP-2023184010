@@ -1,5 +1,6 @@
-"""Classic Sonic animation viewer (Python + pico2d)."""
+"""Classic Sonic viewer. Optional verification: --trace --cycles 2."""
 
+import argparse
 from dataclasses import dataclass
 from math import isfinite
 from pathlib import Path
@@ -210,7 +211,28 @@ def validate_actions(sheet):
                 raise ValueError(f"Invalid source frame: {action.name}: {frame}")
 
 
-def main():
+def trace_event(kind, player):
+    print(f"{player.timeline:10.6f} {kind:6} "
+          f"action={ACTIONS[player.action_index].name} "
+          f"repeat={player.completed_repeats} frame={player.frame_index} "
+          f"cycle={player.cycles}", flush=True)
+
+
+def parse_args(argv=None):
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--trace", action="store_true", help="Log action, repeat and hold boundaries")
+    parser.add_argument("--cycles", type=int, help="Exit after N full cycles (default: infinite)")
+    parser.add_argument("--seconds", type=float, help="Exit after N seconds for a rendering smoke check")
+    args = parser.parse_args(argv)
+    if args.cycles is not None and args.cycles <= 0:
+        parser.error("--cycles must be positive")
+    if args.seconds is not None and (not isfinite(args.seconds) or args.seconds <= 0):
+        parser.error("--seconds must be finite and positive")
+    return args
+
+
+def main(argv=None):
+    args = parse_args(argv)
     if not SOURCE_PATH.is_file():
         print(f"Sprite image not found: {SOURCE_PATH}. Place sonic-sprite.png beside this script.", file=sys.stderr)
         return 1
@@ -223,18 +245,25 @@ def main():
         validate_actions(sheet)
         layouts = tuple(action_layout(action) for action in ACTIONS)
         player = Player()
-        previous = perf_counter()
+        emit = trace_event if args.trace else None
+        if emit:
+            emit("action", player)
+        started = previous = perf_counter()
         while handle_events():
             now = perf_counter()
-            advance(player, now - previous)
+            if args.seconds is not None and now - started >= args.seconds:
+                break
+            advance(player, now - previous, emit)
             previous = now
+            if args.cycles is not None and player.cycles >= args.cycles:
+                break
             p.clear_canvas()
             draw_frame(sheet, ACTIONS[player.action_index].frames[player.frame_index],
                        layouts[player.action_index])
             p.update_canvas()
             p.delay(0.01)
     except (OSError, ValueError) as error:
-        print(f"Cannot start viewer with {SOURCE_PATH}: {error or 'image load failed'}. "
+        print(f"Cannot start viewer with {SOURCE_PATH}: {str(error) or 'image load failed'}. "
               "Check the PNG file and animation data.", file=sys.stderr)
         return 1
     finally:
