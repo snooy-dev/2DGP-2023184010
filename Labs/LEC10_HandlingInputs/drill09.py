@@ -41,6 +41,7 @@ def update():
     dy = int(SDLK_UP in pressed_keys) - int(SDLK_DOWN in pressed_keys)
     x += dx * 5
     y += dy * 5
+    x = max(50, x)
 
 
 def draw():
