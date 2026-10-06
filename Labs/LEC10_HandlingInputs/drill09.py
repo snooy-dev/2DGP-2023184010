@@ -14,6 +14,8 @@ def handle_events():
                 running = False
             elif event.key == SDLK_RIGHT:
                 pressed_keys.add(SDLK_RIGHT)
+            elif event.key == SDLK_LEFT:
+                pressed_keys.add(SDLK_LEFT)
         elif event.type == SDL_KEYUP:
             if event.key == SDLK_RIGHT:
                 pressed_keys.discard(SDLK_RIGHT)
@@ -23,7 +25,7 @@ def update():
     global frame, x, dx
 
     frame = (frame + 1) % 8
-    dx = int(SDLK_RIGHT in pressed_keys)
+    dx = int(SDLK_RIGHT in pressed_keys) - int(SDLK_LEFT in pressed_keys)
     x += dx * 5
 
 
