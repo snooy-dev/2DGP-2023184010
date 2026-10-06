@@ -4,7 +4,7 @@ from pico2d import *
 
 
 def handle_events():
-    global running
+    global running, facing
 
     for event in get_events():
         if event.type == SDL_QUIT:
@@ -16,6 +16,7 @@ def handle_events():
                 pressed_keys.add(SDLK_RIGHT)
             elif event.key == SDLK_LEFT:
                 pressed_keys.add(SDLK_LEFT)
+                facing = -1
         elif event.type == SDL_KEYUP:
             if event.key == SDLK_RIGHT:
                 pressed_keys.discard(SDLK_RIGHT)
@@ -34,7 +35,8 @@ def update():
 def draw():
     clear_canvas()
     tuk_ground.draw(TUK_WIDTH // 2, TUK_HEIGHT // 2)
-    character.clip_draw(frame * 100, 300, 100, 100, x, y)
+    row = 300 if facing == 1 else 200
+    character.clip_draw(frame * 100, row, 100, 100, x, y)
     update_canvas()
 
 
@@ -47,6 +49,7 @@ x, y = TUK_WIDTH // 2, TUK_HEIGHT // 2
 frame = 0
 pressed_keys = set()
 dx = 0
+facing = 1
 running = True
 
 while running:
