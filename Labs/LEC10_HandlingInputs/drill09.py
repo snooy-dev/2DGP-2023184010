@@ -51,6 +51,8 @@ def draw():
         row = 100
     elif dx < 0:
         row = 0
+    elif dy != 0:
+        row = 100 if facing == 1 else 0
     character.clip_draw(frame * 100, row, 100, 100, x, y)
     update_canvas()
 
