@@ -14,13 +14,15 @@ def handle_events():
 
 
 def update():
-    pass
+    global frame
+
+    frame = (frame + 1) % 8
 
 
 def draw():
     clear_canvas()
     tuk_ground.draw(TUK_WIDTH // 2, TUK_HEIGHT // 2)
-    character.clip_draw(0, 300, 100, 100, x, y)
+    character.clip_draw(frame * 100, 300, 100, 100, x, y)
     update_canvas()
 
 
@@ -30,6 +32,7 @@ image_dir = Path(__file__).resolve().parent
 tuk_ground = load_image(str(image_dir / 'TUK_GROUND.png'))
 character = load_image(str(image_dir / 'animation_sheet.png'))
 x, y = TUK_WIDTH // 2, TUK_HEIGHT // 2
+frame = 0
 running = True
 
 while running:
