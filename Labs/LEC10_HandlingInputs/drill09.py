@@ -14,6 +14,7 @@ def handle_events():
                 running = False
             elif event.key == SDLK_RIGHT:
                 pressed_keys.add(SDLK_RIGHT)
+                facing = 1
             elif event.key == SDLK_LEFT:
                 pressed_keys.add(SDLK_LEFT)
                 facing = -1
