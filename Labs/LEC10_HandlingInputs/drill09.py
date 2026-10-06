@@ -14,6 +14,9 @@ def handle_events():
                 running = False
             elif event.key == SDLK_RIGHT:
                 pressed_keys.add(SDLK_RIGHT)
+        elif event.type == SDL_KEYUP:
+            if event.key == SDLK_RIGHT:
+                pressed_keys.discard(SDLK_RIGHT)
 
 
 def update():
