@@ -9,14 +9,19 @@ def handle_events():
     for event in get_events():
         if event.type == SDL_QUIT:
             running = False
-        elif event.type == SDL_KEYDOWN and event.key == SDLK_ESCAPE:
-            running = False
+        elif event.type == SDL_KEYDOWN:
+            if event.key == SDLK_ESCAPE:
+                running = False
+            elif event.key == SDLK_RIGHT:
+                pressed_keys.add(SDLK_RIGHT)
 
 
 def update():
-    global frame
+    global frame, x, dx
 
     frame = (frame + 1) % 8
+    dx = int(SDLK_RIGHT in pressed_keys)
+    x += dx * 5
 
 
 def draw():
@@ -33,6 +38,8 @@ tuk_ground = load_image(str(image_dir / 'TUK_GROUND.png'))
 character = load_image(str(image_dir / 'animation_sheet.png'))
 x, y = TUK_WIDTH // 2, TUK_HEIGHT // 2
 frame = 0
+pressed_keys = set()
+dx = 0
 running = True
 
 while running:
