@@ -37,6 +37,8 @@ def draw():
     clear_canvas()
     tuk_ground.draw(TUK_WIDTH // 2, TUK_HEIGHT // 2)
     row = 300 if facing == 1 else 200
+    if dx > 0:
+        row = 100
     character.clip_draw(frame * 100, row, 100, 100, x, y)
     update_canvas()
 
