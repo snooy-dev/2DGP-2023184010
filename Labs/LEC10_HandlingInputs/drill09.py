@@ -18,6 +18,8 @@ def handle_events():
             elif event.key == SDLK_LEFT:
                 pressed_keys.add(SDLK_LEFT)
                 facing = -1
+            elif event.key == SDLK_UP:
+                pressed_keys.add(SDLK_UP)
         elif event.type == SDL_KEYUP:
             if event.key == SDLK_RIGHT:
                 pressed_keys.discard(SDLK_RIGHT)
@@ -26,11 +28,13 @@ def handle_events():
 
 
 def update():
-    global frame, x, dx
+    global frame, x, y, dx, dy
 
     frame = (frame + 1) % 8
     dx = int(SDLK_RIGHT in pressed_keys) - int(SDLK_LEFT in pressed_keys)
+    dy = int(SDLK_UP in pressed_keys)
     x += dx * 5
+    y += dy * 5
 
 
 def draw():
@@ -54,6 +58,7 @@ x, y = TUK_WIDTH // 2, TUK_HEIGHT // 2
 frame = 0
 pressed_keys = set()
 dx = 0
+dy = 0
 facing = 1
 running = True
 
