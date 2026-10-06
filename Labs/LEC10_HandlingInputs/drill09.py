@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from pico2d import *
 
 
@@ -17,11 +19,14 @@ def update():
 
 def draw():
     clear_canvas()
+    tuk_ground.draw(TUK_WIDTH // 2, TUK_HEIGHT // 2)
     update_canvas()
 
 
 TUK_WIDTH, TUK_HEIGHT = 1280, 1024
 open_canvas(TUK_WIDTH, TUK_HEIGHT)
+image_dir = Path(__file__).resolve().parent
+tuk_ground = load_image(str(image_dir / 'TUK_GROUND.png'))
 running = True
 
 while running:
