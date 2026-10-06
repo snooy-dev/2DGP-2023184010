@@ -25,6 +25,8 @@ def handle_events():
                 pressed_keys.discard(SDLK_RIGHT)
             elif event.key == SDLK_LEFT:
                 pressed_keys.discard(SDLK_LEFT)
+            elif event.key == SDLK_UP:
+                pressed_keys.discard(SDLK_UP)
 
 
 def update():
