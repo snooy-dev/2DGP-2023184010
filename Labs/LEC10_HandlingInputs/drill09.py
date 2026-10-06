@@ -42,6 +42,7 @@ def update():
     x += dx * 5
     y += dy * 5
     x = max(50, x)
+    x = min(TUK_WIDTH - 50, x)
 
 
 def draw():
