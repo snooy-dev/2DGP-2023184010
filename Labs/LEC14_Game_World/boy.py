@@ -28,26 +28,41 @@ class Boy:
                  'source': ['IDLE', 'SLEEP'], 'dest': 'RUN'},
                 {'trigger': 'stop_run',
                  'source': 'RUN', 'dest': 'IDLE'},
+                {'trigger': 'kick',
+                 'source': 'IDLE', 'dest': 'IDLE'},
+                {'trigger': 'kick',
+                 'source': 'RUN', 'dest': 'RUN'},
             ],
             initial='IDLE',
             auto_transitions=False,
+            send_event=True,
         )
 
-    def on_enter_IDLE(self):
+    def on_enter_IDLE(self, event):
         self.idle_started_at = get_time()
         self.frame = 0
 
-    def on_enter_SLEEP(self):
+    def on_exit_IDLE(self, event):
+        if event.event.name == 'kick':
+            print(f"Kick the ball to the {'right' if self.face_dir == 1 else 'left'}!")
+
+    def on_enter_SLEEP(self, event):
         self.frame = 0
 
-    def on_enter_RUN(self):
+    def on_enter_RUN(self, event):
         self.frame = 0
+
+    def on_exit_RUN(self, event):
+        if event.event.name == 'kick':
+            print(f"Kick the ball to the {'right' if self.face_dir == 1 else 'left'}!")
 
     def handle_event(self, event):
         if (event.type == SDL_KEYDOWN and
-                event.key == SDLK_SPACE and
-                self.state == 'SLEEP'):
-            self.wake_up()
+                event.key == SDLK_SPACE):
+            if self.state == 'SLEEP':
+                self.wake_up()
+            elif self.state in ('IDLE', 'RUN'):
+                self.kick()
             return
 
         if (event.type not in (SDL_KEYDOWN, SDL_KEYUP) or
